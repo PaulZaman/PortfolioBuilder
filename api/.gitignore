@@ -1,0 +1,22 @@
+# Python virtual environment
+venv/
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Environment variables
+.env
+
+# Firebase service account keys
+**/serviceAccountKey.json
+
+# IDE/editor settings (optional)
+.vscode/
+.idea/
+
+# OS files (optional)
+.DS_Store
+Thumbs.db

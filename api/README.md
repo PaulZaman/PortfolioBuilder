@@ -6,6 +6,19 @@ FastAPI backend for authentication, user profile management, and integration wit
 
 ## 🚀 How to Launch the Backend
 
+### Prerequisites
+
+Make sure you have the following files (not in the repo):
+
+- **api/.env**: Environment variables for the backend.
+- **api/app/core/keys/serviceAccountKey.json**: Firebase service account key.
+
+Now, you can navigate to the `api` directory and set up the backend.
+
+```bash
+cd api
+```
+
 ### Create venv and Activate
 
 Make sure you are in the api directory of the project.

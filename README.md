@@ -16,3 +16,4 @@ This project includes:
 - To launch the frontend, please refer to [Frontend README here](./front_end/README.md).
 
 ✅ This project uses a modular architecture: separate folders for backend and frontend.
+

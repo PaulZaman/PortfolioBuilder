@@ -1,8 +1,8 @@
 from fastapi import APIRouter, Depends
 from app.models.user import UserSignup, UserLogin
-from app.core.firebase import signup_user, login_user, verify_token
-from app.core.firebase import signup_user, db
-from app.core.firebase import login_user, verify_token
+from app.core.firebase_auth import signup_user, login_user, verify_token
+from app.core.firebase_init import db
+from app.core.firebase_watchlist import get_all_stocks_firebase, add_to_watchlist_firebase, remove_from_watchlist_firebase, get_user_watchlist_firebase
 from fastapi import HTTPException
 import logging
 from app.services.yfinance_service import get_daily_performance
@@ -95,10 +95,15 @@ async def get_user_info(user=Depends(verify_token)):
         raise HTTPException(status_code=400, detail=str(e))
 
 
-DEFAULT_WATCHLIST = [
-    "AAPL", "MSFT", "GOOGL", "AMZN", "META",
-    "TSLA", "NVDA", "JPM", "JNJ", "XOM"
-]
+@router.get("/stocks")
+async def get_all_stocks():
+    try:
+        # Fetch all stocks from Firestore
+        stock_list = await get_all_stocks_firebase()
+
+        return {"stocks": stock_list}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error fetching stocks: {str(e)}")
 
 @router.get("/user/watchlist")
 async def get_user_watchlist(user=Depends(verify_token)):
@@ -106,56 +111,33 @@ async def get_user_watchlist(user=Depends(verify_token)):
         # Get the user ID from the token
         uid = user["localId"]
 
-        user_ref = db.collection("users").document(uid)
-        user_doc = user_ref.get()
+        # Fetch the user's watchlist from Firestore
+        stock_data = await get_user_watchlist_firebase(uid)
 
-        if not user_doc.exists or "watchlist" not in user_doc.to_dict():
-            user_ref.set({"watchlist": DEFAULT_WATCHLIST}, merge=True)
-            watchlist = DEFAULT_WATCHLIST
-        else:
-            watchlist = user_doc.to_dict().get("watchlist", [])
-
-        stocks_collection = db.collection("Stocks")
-        stock_docs = [stocks_collection.document(t).get() for t in watchlist]
-        stock_data = [doc.to_dict() | {"ticker": doc.id} for doc in stock_docs if doc.exists]
-
-        # Fetch daily performance for the watchlist
-        stock_tickers = [doc["ticker"] for doc in stock_data]
-        performance = get_daily_performance(stock_tickers)
-
+        # Save into a list
         result = {"user_id": uid, "watchlist": stock_data}
 
+        # Get daily performance for each stock in the watchlist
+        performance = get_daily_performance([stock["ticker"] for stock in result["watchlist"]])
+
+        # Add daily performance to each stock in the watchlist
         for stock in result["watchlist"]:
             ticker = stock["ticker"]
             if ticker in performance:
                 stock["daily_performance"] = performance[ticker]
             else:
                 stock["daily_performance"] = None
+
         return result
 
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Error retrieving watchlist: {str(e)}")
 
-@router.get("/stocks")
-async def get_all_stocks():
-    try:
-        stocks = db.collection("Stocks").stream()
-        stock_list = [doc.to_dict() | {"ticker": doc.id} for doc in stocks]
-        return {"stocks": stock_list}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error fetching stocks: {str(e)}")
-
 @router.post("/user/watchlist/add")
 async def add_to_watchlist(ticker: str, user=Depends(verify_token)):
     try:
         uid = user["localId"]
-        user_ref = db.collection("users").document(uid)
-        user_doc = user_ref.get()
-        watchlist = user_doc.to_dict().get("watchlist", []) if user_doc.exists else []
-
-        if ticker not in watchlist:
-            watchlist.append(ticker)
-            user_ref.update({"watchlist": watchlist})
+        watchlist = await add_to_watchlist_firebase(ticker, uid)
 
         return {"message": f"{ticker} added to watchlist.", "watchlist": watchlist}
     except Exception as e:
@@ -165,13 +147,9 @@ async def add_to_watchlist(ticker: str, user=Depends(verify_token)):
 async def remove_from_watchlist(ticker: str, user=Depends(verify_token)):
     try:
         uid = user["localId"]
-        user_ref = db.collection("users").document(uid)
-        user_doc = user_ref.get()
-        watchlist = user_doc.to_dict().get("watchlist", []) if user_doc.exists else []
-
-        if ticker in watchlist:
-            watchlist.remove(ticker)
-            user_ref.update({"watchlist": watchlist})
+        
+        # Remove the stock from the watchlist
+        watchlist = await remove_from_watchlist_firebase(ticker, uid)
 
         return {"message": f"{ticker} removed from watchlist.", "watchlist": watchlist}
     except Exception as e:

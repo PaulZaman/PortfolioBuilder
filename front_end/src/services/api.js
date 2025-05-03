@@ -53,4 +53,26 @@ export const authService = {
   }
 };
 
+export const marketService = {
+  async getWatchlist() {
+    const response = await api.get('/api/user/watchlist');
+    return response.data;
+  },
+
+  async getAllStocks() {
+    const response = await api.get('/api/stocks');
+    return response.data;
+  },
+
+  async addToWatchlist(ticker) {
+    const response = await api.post(`/api/user/watchlist/add?ticker=${ticker}`);
+    return response.data;
+  },
+
+  async removeFromWatchlist(ticker) {
+    const response = await api.post(`/api/user/watchlist/remove?ticker=${ticker}`);
+    return response.data;
+  }
+};
+
 export default api; 

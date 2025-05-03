@@ -49,14 +49,20 @@
           </el-col>
           
           <el-col :span="8">
-            <el-card class="feature-card">
+            <el-card class="feature-card cursor-pointer" @click="router.push('/market')">
               <template #header>
                 <div class="card-header">
-                  <span>Recent Activity</span>
+                  <span>Market Watch</span>
                 </div>
               </template>
               <div class="feature-content">
-                <p>No recent activity</p>
+                <div class="flex items-center justify-between">
+                  <div>
+                    <h4 class="text-lg font-medium mb-2">Stock Market</h4>
+                    <p class="text-gray-500">Monitor your watchlist and track stock performance</p>
+                  </div>
+                  <el-icon class="text-2xl text-blue-500"><TrendCharts /></el-icon>
+                </div>
               </div>
             </el-card>
           </el-col>
@@ -84,7 +90,7 @@
 import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { ElMessage } from 'element-plus';
-import { ArrowDown } from '@element-plus/icons-vue';
+import { ArrowDown, TrendCharts } from '@element-plus/icons-vue';
 import { authService } from '../services/api';
 
 const router = useRouter();
@@ -254,5 +260,9 @@ const handleCommand = (command) => {
   .welcome-card h3 {
     font-size: 20px;
   }
+}
+
+.cursor-pointer {
+  cursor: pointer;
 }
 </style> 

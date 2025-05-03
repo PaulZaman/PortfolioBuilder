@@ -6,6 +6,7 @@ from app.core.firebase_watchlist import get_all_stocks_firebase, add_to_watchlis
 from fastapi import HTTPException
 import logging
 from app.services.yfinance_service import get_daily_performance
+import yfinance as yf
 
 # Configure logs
 logging.basicConfig(level=logging.INFO)
@@ -117,16 +118,26 @@ async def get_user_watchlist(user=Depends(verify_token)):
         # Save into a list
         result = {"user_id": uid, "watchlist": stock_data}
 
-        # Get daily performance for each stock in the watchlist
+        # Get daily performance and current price for each stock in the watchlist
         performance = get_daily_performance([stock["ticker"] for stock in result["watchlist"]])
+        
+        # Get current prices using yfinance
+        tickers = [stock["ticker"] for stock in result["watchlist"]]
+        current_prices = yf.download(tickers, period="1d", group_by='ticker', auto_adjust=False)
 
-        # Add daily performance to each stock in the watchlist
+        # Add daily performance and current price to each stock in the watchlist
         for stock in result["watchlist"]:
             ticker = stock["ticker"]
             if ticker in performance:
                 stock["daily_performance"] = performance[ticker]
             else:
                 stock["daily_performance"] = None
+                
+            # Add current price
+            try:
+                stock["price"] = round(current_prices[ticker]["Close"].iloc[-1], 2)
+            except:
+                stock["price"] = None
 
         return result
 

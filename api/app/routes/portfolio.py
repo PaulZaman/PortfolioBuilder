@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Body
 from app.core.firebase_init import db
 from app.core.firebase_auth import verify_token
 import uuid
@@ -6,11 +6,100 @@ from app.services.yfinance_service import get_stock_data
 from app.models.portfolio import Portfolio
 from app.core.firebase_watchlist import get_all_stocks_firebase
 from app.core.firebase_portfolio import create_new_portfolio_firebase, get_user_portfolios_firebase, delete_portfolio_firebase, get_portfolio_firebase
+from app.optimizitation.optimize import optimize_portfolio
 import datetime
 
 
 router = APIRouter(prefix="/api/portfolios", tags=["Portfolios"])
 
+@router.post("/optimize")
+async def optimize_new_portfolio(
+
+    data: dict = Body(...),
+    user=Depends(verify_token)
+):
+    try:
+        
+        uid = user["localId"]
+
+        tickers = data.get("tickers", [])
+        start_date = data.get("start_date")
+        end_date = data.get("end_date")
+        interval = data.get("interval", "1d")
+        metric = data.get("metric", "sharpe")
+        allow_short = data.get("allow_short", False)
+
+        if not start_date:
+            raise HTTPException(status_code=422, detail="start_date is required")
+
+        result = optimize_portfolio(
+            tickers=tickers,
+            start_date=start_date,
+            end_date=end_date,
+            interval=interval,
+            metric=metric,
+            allow_short=allow_short,
+        )
+
+        return {
+            "tickers": tickers,
+            "optimized_weights": result["weights"],
+            "metric": metric,
+            "result": result,
+        }
+
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Optimization error: {str(e)}")
+
+@router.post("/optimize/{ptfid}")
+async def optimize_existing_portfolio(
+    ptfid: str,
+    data: dict = Body(...),
+    user=Depends(verify_token)
+):
+    try:
+        
+        uid = user["localId"]
+        portfolio = await get_portfolio_firebase(ptfid)
+
+        if not portfolio:
+            raise HTTPException(status_code=404, detail="Portfolio not found")
+
+        tickers = portfolio.get("tickers", [])
+        name = portfolio.get("name", "Unnamed")
+
+        if not tickers:
+            raise HTTPException(status_code=400, detail="No tickers in this portfolio.")
+
+        # Récupération des champs du body JSON
+        start_date = data.get("start_date")
+        end_date = data.get("end_date")
+        interval = data.get("interval", "1d")
+        metric = data.get("metric", "sharpe")
+        allow_short = data.get("allow_short", False)
+
+        if not start_date:
+            raise HTTPException(status_code=422, detail="start_date is required")
+
+        result = optimize_portfolio(
+            tickers=tickers,
+            start_date=start_date,
+            end_date=end_date,
+            interval=interval,
+            metric=metric,
+            allow_short=allow_short,
+        )
+
+        return {
+            "portfolio_name": name,
+            "tickers": tickers,
+            "optimized_weights": result["weights"],
+            "metric": metric,
+            "result": result,
+        }
+
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Optimization error: {str(e)}")
 
 @router.post("/create")
 async def create_portfolio(portfolio: Portfolio, user=Depends(verify_token)):

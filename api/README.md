@@ -128,3 +128,19 @@ Delete a specific portfolio by its ID.
 Headers: Authorization  
 Returns:  
 { "message": "Portfolio deleted successfully" }
+
+### POST /api/optimize/{ptfid}
+Optimize a portfolio by its ID.
+Headers: Authorization
+Body:
+{ "start_date": "YYYY-MM-DD", "end_date": "YYYY-MM-DD", "interval": string (optional), "metric": string (optional), "allow_short": boolean (optional) }
+Returns: 
+{ "portfolio_name": string, "tickers": [...], "optimized_weights": { ticker: weight, ... }, "metric": string, "result": { "weights": { ticker: weight, ... }, "score": float, "cum_returns": { date: value, ... } } }
+
+### POST /api/optimize
+Optimize a new sample portfolio.
+Headers: Authorization
+Body:
+{ "tickers": [...], "start_date": "YYYY-MM-DD", "end_date": "YYYY-MM-DD", "interval": string (optional), "metric": string (optional), "allow_short": boolean (optional) }
+Returns:
+{ "tickers": [...], "optimized_weights": { ticker: weight, ... }, "metric": string, "result": { "weights": { ticker: weight, ... }, "score": float, "cum_returns": { date: value, ... } } }

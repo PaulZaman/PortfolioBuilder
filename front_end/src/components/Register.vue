@@ -153,7 +153,7 @@ const showPrivacy = () => {
 <style scoped>
 .register-container {
   min-height: 100vh;
-  width: 100%;
+  width: 100vw;
   display: flex;
   justify-content: center;
   align-items: center;
@@ -161,6 +161,9 @@ const showPrivacy = () => {
   margin: 0;
   padding: 0;
   overflow-x: hidden;
+  position: fixed;
+  top: 0;
+  left: 0;
 }
 
 .register-background {

@@ -125,11 +125,14 @@ const handleCommand = (command) => {
 <style scoped>
 .home-container {
   min-height: 100vh;
-  width: 100%;
+  width: 100vw;
   background-color: #f5f7fa;
   margin: 0;
   padding: 0;
   overflow-x: hidden;
+  position: fixed;
+  top: 0;
+  left: 0;
 }
 
 .header {
@@ -137,6 +140,11 @@ const handleCommand = (command) => {
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   width: 100%;
   padding: 0;
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 1000;
+  height: 60px;
 }
 
 .header-content {
@@ -148,6 +156,12 @@ const handleCommand = (command) => {
   margin: 0;
   padding: 0 20px;
   box-sizing: border-box;
+}
+
+.header-content h2 {
+  margin: 0;
+  font-size: 24px;
+  color: #2c3e50;
 }
 
 .header-right {
@@ -174,10 +188,12 @@ const handleCommand = (command) => {
 }
 
 .el-main {
+  margin-top: 60px;
   padding: 20px;
   width: 100%;
   max-width: none;
   box-sizing: border-box;
+  min-height: calc(100vh - 60px);
 }
 
 .welcome-card {

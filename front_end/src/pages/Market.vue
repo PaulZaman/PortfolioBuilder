@@ -1,7 +1,7 @@
 <template>
-  <div class="market-page">
+  <div class="market-container">
     <el-container>
-      <el-header class="header">
+      <el-header class="market-header">
         <div class="header-content">
           <h2>Market Watch</h2>
           <div class="header-right">
@@ -10,7 +10,7 @@
         </div>
       </el-header>
 
-      <el-main>
+      <el-main class="market-content">
         <!-- Search and Add Stock Section -->
         <el-row :gutter="20" class="mb-4">
           <el-col :span="24">
@@ -237,16 +237,28 @@ export default {
 </script>
 
 <style scoped>
-.market-page {
+.market-container {
   min-height: 100vh;
+  width: 100vw;
   background-color: #f5f7fa;
+  margin: 0;
+  padding: 0;
+  overflow-x: hidden;
+  position: fixed;
+  top: 0;
+  left: 0;
 }
 
-.header {
+.market-header {
   background-color: #fff;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   width: 100%;
   padding: 0;
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 1000;
+  height: 60px;
 }
 
 .header-content {
@@ -258,6 +270,21 @@ export default {
   margin: 0;
   padding: 0 20px;
   box-sizing: border-box;
+}
+
+.header-content h2 {
+  margin: 0;
+  font-size: 24px;
+  color: #2c3e50;
+}
+
+.market-content {
+  margin-top: 60px;
+  padding: 20px;
+  width: 100%;
+  max-width: none;
+  box-sizing: border-box;
+  min-height: calc(100vh - 60px);
 }
 
 .el-main {

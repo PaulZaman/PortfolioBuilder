@@ -75,4 +75,22 @@ export const marketService = {
   }
 };
 
+export const portfolioService = {
+  async getAllPortfolios() {
+    return await api.get('/api/portfolios/get');
+  },
+
+  async getPortfolioById(id) {
+    return await api.get(`/api/portfolios/get/${id}`);
+  },
+
+  async createPortfolio(portfolioData) {
+    return await api.post('/api/portfolios/create', portfolioData);
+  },
+
+  async deletePortfolio(id) {
+    return await api.delete(`/api/portfolios/delete/${id}`);
+  }
+};
+
 export default api; 

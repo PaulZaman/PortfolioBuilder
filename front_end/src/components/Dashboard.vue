@@ -68,6 +68,25 @@
           </el-col>
           
           <el-col :span="8">
+            <el-card class="feature-card cursor-pointer" @click="router.push('/portfolio')">
+              <template #header>
+                <div class="card-header">
+                  <span>Portfolio Management</span>
+                </div>
+              </template>
+              <div class="feature-content">
+                <div class="flex items-center justify-between">
+                  <div>
+                    <h4 class="text-lg font-medium mb-2">My Portfolios</h4>
+                    <p class="text-gray-500">Manage your investment portfolios</p>
+                  </div>
+                  <el-icon class="text-2xl text-green-500"><Collection /></el-icon>
+                </div>
+              </div>
+            </el-card>
+          </el-col>
+          
+          <el-col :span="8">
             <el-card class="feature-card">
               <template #header>
                 <div class="card-header">
@@ -90,7 +109,7 @@
 import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { ElMessage } from 'element-plus';
-import { ArrowDown, TrendCharts } from '@element-plus/icons-vue';
+import { ArrowDown, TrendCharts, Collection } from '@element-plus/icons-vue';
 import { authService } from '../services/api';
 
 const router = useRouter();

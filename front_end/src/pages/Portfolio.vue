@@ -1,12 +1,15 @@
 <template>
-  <div class="portfolio-container">
+  <div class="portfolio-container fade-in">
     <el-container>
-      <el-header class="portfolio-header">
+      <el-header class="portfolio-header enhanced-header">
         <div class="header-content">
-          <h2>My Portfolios</h2>
+          <div class="header-left">
+            <img src="https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/svg/1f4b0.svg" alt="logo" class="logo" />
+            <h2>My Portfolios</h2>
+          </div>
           <div class="header-right">
-            <el-button type="primary" @click="showCreateModal = true">Create New Portfolio</el-button>
-            <el-button type="primary" @click="$router.push('/home')">Back to Dashboard</el-button>
+            <el-button class="round-btn gradient-btn" type="primary" @click="showCreateModal = true">Create New Portfolio</el-button>
+            <el-button class="round-btn gradient-btn" type="primary" @click="$router.push('/home')">Back to Dashboard</el-button>
           </div>
         </div>
       </el-header>
@@ -15,7 +18,7 @@
         <!-- Portfolio List -->
         <el-row :gutter="20">
           <el-col :span="24">
-            <el-card>
+            <el-card class="enhanced-card fade-in">
               <div v-if="loading" class="loading-state">
                 <el-icon class="is-loading"><Loading /></el-icon>
                 <span>Loading...</span>
@@ -24,10 +27,10 @@
                 No portfolios yet. Click the button above to create a new portfolio.
               </div>
               <div v-else class="portfolio-grid">
-                <el-card v-for="portfolio in portfolios" :key="portfolio.id" class="portfolio-card">
+                <el-card v-for="portfolio in portfolios" :key="portfolio.id" class="portfolio-card enhanced-card fade-in">
                   <div class="portfolio-card-header">
                     <h3>{{ portfolio.name }}</h3>
-                    <el-button type="danger" size="small" @click="deletePortfolio(portfolio.id)">Delete</el-button>
+                    <el-button class="remove-btn gradient-btn" type="danger" size="small" @click="deletePortfolio(portfolio.id)">Delete</el-button>
                   </div>
                   <div class="portfolio-info">
                     <p>Created: {{ formatDate(portfolio.start_date) }}</p>
@@ -52,10 +55,11 @@
       title="Create New Portfolio"
       width="50%"
       :close-on-click-modal="false"
+      class="enhanced-dialog fade-in"
     >
       <el-form :model="newPortfolio" :rules="rules" ref="portfolioForm" label-width="120px">
         <el-form-item label="Portfolio Name" prop="name">
-          <el-input v-model="newPortfolio.name" placeholder="Enter portfolio name"></el-input>
+          <el-input v-model="newPortfolio.name" placeholder="Enter portfolio name" class="enhanced-input"></el-input>
         </el-form-item>
         <el-form-item label="Start Date" prop="start_date">
           <el-date-picker
@@ -63,6 +67,7 @@
             type="date"
             placeholder="Select start date"
             style="width: 100%"
+            class="enhanced-input"
           ></el-date-picker>
         </el-form-item>
         <el-form-item label="Stock Allocation">
@@ -72,6 +77,7 @@
               filterable
               placeholder="Select stock"
               style="width: 200px"
+              class="enhanced-input"
             >
               <el-option
                 v-for="stock in availableStocks"
@@ -94,8 +100,9 @@
               :precision="2"
               placeholder="Weight"
               style="width: 150px"
+              class="enhanced-input"
             ></el-input-number>
-            <el-button type="danger" @click="removeTicker(index)" :disabled="newPortfolio.items.length === 1">
+            <el-button class="remove-btn gradient-btn" type="danger" @click="removeTicker(index)" :disabled="newPortfolio.items.length === 1">
               Remove
             </el-button>
           </div>
@@ -103,9 +110,9 @@
       </el-form>
       <template #footer>
         <span class="dialog-footer">
-          <el-button type="primary" @click="addTicker">Add Stock</el-button>
-          <el-button @click="showCreateModal = false">Cancel</el-button>
-          <el-button type="primary" @click="submitPortfolio" :loading="submitting">
+          <el-button class="round-btn gradient-btn" type="primary" @click="addTicker">Add Stock</el-button>
+          <el-button class="round-btn gradient-btn" @click="showCreateModal = false">Cancel</el-button>
+          <el-button class="round-btn gradient-btn" type="primary" @click="submitPortfolio" :loading="submitting">
             Create
           </el-button>
         </span>
@@ -325,7 +332,7 @@ onMounted(() => {
 .portfolio-container {
   min-height: 100vh;
   width: 100vw;
-  background-color: #f5f7fa;
+  background: linear-gradient(135deg, #f5f7fa 60%, #e3eaff 100%);
   margin: 0;
   padding: 0;
   overflow-x: hidden;
@@ -334,9 +341,9 @@ onMounted(() => {
   left: 0;
 }
 
-.portfolio-header {
-  background-color: #fff;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+.portfolio-header.enhanced-header {
+  background: linear-gradient(90deg, #409eff 0%, #36cfc9 100%);
+  box-shadow: 0 4px 16px rgba(64, 158, 255, 0.08);
   width: 100%;
   padding: 0;
   position: fixed;
@@ -353,14 +360,14 @@ onMounted(() => {
   height: 100%;
   width: 100%;
   margin: 0;
-  padding: 0 20px;
+  padding: 0 32px;
   box-sizing: border-box;
 }
 
 .header-content h2 {
   margin: 0;
   font-size: 24px;
-  color: #2c3e50;
+  color: #fff;
 }
 
 .portfolio-content {
@@ -444,12 +451,74 @@ onMounted(() => {
   border-radius: 8px;
 }
 
+.enhanced-card {
+  border-radius: 12px;
+  border: none;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  transition: all 0.3s ease;
+}
+
+.enhanced-card:hover {
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+}
+
+.enhanced-input {
+  border-radius: 8px;
+}
+
+.round-btn {
+  border-radius: 20px;
+  padding: 8px 20px;
+}
+
+.gradient-btn {
+  background: linear-gradient(90deg, #409eff 0%, #36cfc9 100%);
+  border: none;
+  color: white;
+}
+
+.gradient-btn:hover {
+  background: linear-gradient(90deg, #66b1ff 0%, #5cdbd3 100%);
+  color: white;
+}
+
+.remove-btn {
+  background: linear-gradient(90deg, #f56c6c 0%, #ff9c9c 100%);
+  border: none;
+  color: white;
+}
+
+.remove-btn:hover {
+  background: linear-gradient(90deg, #f78989 0%, #ffb3b3 100%);
+  color: white;
+}
+
+.logo {
+  width: 36px;
+  height: 36px;
+  margin-right: 14px;
+  vertical-align: middle;
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+}
+
+.fade-in {
+  animation: fadeIn 0.7s;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
 /* Responsive layout */
 @media screen and (min-width: 1200px) {
   .portfolio-content {
     padding: 30px 60px;
   }
-  
   .header-content {
     padding: 0 60px;
   }
@@ -459,7 +528,6 @@ onMounted(() => {
   .portfolio-content {
     padding: 40px 80px;
   }
-  
   .header-content {
     padding: 0 80px;
   }
@@ -469,14 +537,17 @@ onMounted(() => {
   .portfolio-content {
     padding: 15px;
   }
-  
   .header-content {
     padding: 0 15px;
   }
+  .portfolio-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
-.header-right {
-  display: flex;
-  gap: 10px;
+body, .portfolio-container {
+  font-family: 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', Arial, sans-serif;
+  font-weight: 400;
+  letter-spacing: 0.1px;
 }
 </style>

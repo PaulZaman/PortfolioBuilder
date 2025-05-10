@@ -50,6 +50,16 @@ export const authService = {
 
   isAuthenticated() {
     return !!localStorage.getItem('token');
+  },
+
+  async updateUserInfo(userData) {
+    const response = await api.post('/api/user/update', userData);
+    return response.data;
+  },
+
+  async deleteUser() {
+    const response = await api.delete('/api/user/delete');
+    return response.data;
   }
 };
 

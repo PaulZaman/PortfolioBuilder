@@ -12,10 +12,16 @@
                 <el-icon><arrow-down /></el-icon>
               </span>
               <template #dropdown>
-                <el-dropdown-menu>
-                  <el-dropdown-item command="profile">Profile</el-dropdown-item>
-                  <el-dropdown-item command="settings">Settings</el-dropdown-item>
-                  <el-dropdown-item divided command="logout">Logout</el-dropdown-item>
+                <el-dropdown-menu class="profile-dropdown-menu">
+                  <el-dropdown-item command="profile">
+                    <el-icon style="margin-right:6px;"><User /></el-icon>Profile
+                  </el-dropdown-item>
+                  <el-dropdown-item command="settings">
+                    <el-icon style="margin-right:6px;"><Setting /></el-icon>Settings
+                  </el-dropdown-item>
+                  <el-dropdown-item divided command="logout">
+                    <el-icon style="margin-right:6px;"><SwitchButton /></el-icon>Logout
+                  </el-dropdown-item>
                 </el-dropdown-menu>
               </template>
             </el-dropdown>
@@ -109,7 +115,7 @@
 import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { ElMessage } from 'element-plus';
-import { ArrowDown, TrendCharts, Collection } from '@element-plus/icons-vue';
+import { ArrowDown, TrendCharts, Collection, User, Setting, SwitchButton } from '@element-plus/icons-vue';
 import { authService } from '../services/api';
 
 const router = useRouter();
@@ -127,7 +133,7 @@ onMounted(async () => {
 const handleCommand = (command) => {
   switch (command) {
     case 'profile':
-      // Handle profile navigation
+      router.push('/profile');
       break;
     case 'settings':
       // Handle settings navigation
@@ -299,5 +305,21 @@ const handleCommand = (command) => {
 
 .cursor-pointer {
   cursor: pointer;
+}
+
+.profile-dropdown-menu {
+  min-width: 160px;
+  border-radius: 12px;
+  box-shadow: 0 4px 16px rgba(64,158,255,0.13);
+  font-size: 15px;
+}
+.profile-dropdown-menu .el-dropdown-menu__item {
+  padding: 10px 18px;
+  border-radius: 8px;
+  transition: background 0.2s;
+}
+.profile-dropdown-menu .el-dropdown-menu__item:hover {
+  background: #f0f7ff;
+  color: #409eff;
 }
 </style> 

@@ -21,10 +21,10 @@
           <el-form-item label="Email">
             <el-input v-model="form.email" disabled />
           </el-form-item>
-          <el-form-item>
+          <el-form-item:last-child>
             <el-button type="primary" :loading="updating" @click="onUpdate">Update Profile</el-button>
             <el-button type="danger" :loading="deleting" @click="onDelete" plain>Delete Account</el-button>
-          </el-form-item>
+          </el-form-item:last-child>
         </el-form>
       </el-card>
     </div>
@@ -131,11 +131,14 @@
   <style scoped>
   .profile-container {
     min-height: 100vh;
+    width: 100vw;
     display: flex;
     align-items: center;
     justify-content: center;
     background: linear-gradient(135deg, #f5f7fa 60%, #e3eaff 100%);
     position: relative;
+    padding: 20px;
+    box-sizing: border-box;
   }
   .profile-card {
     width: 100%;
@@ -175,7 +178,14 @@
   .el-input {
     border-radius: 12px;
   }
+  .el-form-item:last-child {
+    display: flex;
+    gap: 12px;
+    justify-content: flex-start;
+    margin-bottom: 0;
+  }
   .el-button[type='primary'] {
+    flex: 1;
     border-radius: 16px;
     background: linear-gradient(90deg, #36cfc9 0%, #409eff 100%);
     border: none;
@@ -183,6 +193,7 @@
     padding: 8px 22px;
   }
   .el-button[type='danger'] {
+    flex: 1;
     border-radius: 16px;
     font-weight: 500;
     padding: 8px 22px;

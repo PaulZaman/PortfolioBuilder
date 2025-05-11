@@ -48,7 +48,7 @@
                 </div>
               </template>
               <div class="feature-content">
-                <el-button type="primary" plain>View Profile</el-button>
+                <el-button type="primary" plain @click="router.push('/profile')">View Profile</el-button>
                 <el-button type="success" plain>Edit Settings</el-button>
               </div>
             </el-card>

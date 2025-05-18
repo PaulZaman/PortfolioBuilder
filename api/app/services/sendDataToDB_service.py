@@ -8,12 +8,13 @@ API_KEY        = os.getenv('FIREBASE_API_KEY')
 PROJECT_ID     = os.getenv('FIREBASE_PROJECT_ID')
 collection     = 'Stocks'
 
-# URL de base SANS documentId
+# The base URL for the Firestore REST API
 BASE_URL = (
     f"https://firestore.googleapis.com/v1/"
     f"projects/{PROJECT_ID}/databases/(default)/documents/{collection}"
 )
 
+# List of stocks to add
 stocks = [
     {'ticker': 'XOM', 'name': 'Exxon Mobil Corporation', 'sector': 'Energy'},
     {'ticker': 'AAPL', 'name': 'Apple Inc.', 'sector': 'Technology'},
@@ -28,7 +29,7 @@ stocks = [
     {'ticker': 'TEVA', 'name': 'Teva Pharmaceutical Industries Limited', 'sector': 'Health Care'},
 
 ]
-
+# Iterate over the stocks and add them to Firestore
 for stock in stocks:
     payload = {
         "fields": {

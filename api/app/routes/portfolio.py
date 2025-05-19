@@ -131,14 +131,26 @@ async def create_portfolio(portfolio: Portfolio, user=Depends(verify_token)):
         
         # Get the porformance of the tickers
         performances = get_stock_data(portfolio.tickers, start_date=portfolio.start_date)
+        print("Stock performances:", performances)
 
         # Multiply the performance by the weights
         performances['ptf'] = performances[portfolio.tickers].multiply(portfolio.weights, axis=1).sum(axis=1)
+        print("Portfolio performance:", performances['ptf'])
+
+        # Calculate cumulative returns
+        performances['cumulative_ptf'] = (1 + performances['ptf']).cumprod() - 1
+        print("Cumulative portfolio performance:", performances['cumulative_ptf'])
 
         # Create a new portfolio in Firebase Firestore
         ptfid = str(uuid.uuid4())
+        print("Creating portfolio with data:", {
+            "dates": performances['Date'].tolist(),
+            "performance": performances['cumulative_ptf'].tolist()
+        })
         ptf = await create_new_portfolio_firebase(
-            uid, ptfid, portfolio.tickers, portfolio.weights, performances['Date'].tolist(), performances['ptf'].tolist(), portfolio.name)
+            uid, ptfid, portfolio.tickers, portfolio.weights, 
+            performances['Date'].tolist(), performances['cumulative_ptf'].tolist(), 
+            portfolio.name, portfolio.start_date.isoformat())
 
         # Return the portfolio data
         return {"message": "Portfolio created successfully", "portfolio": ptf}

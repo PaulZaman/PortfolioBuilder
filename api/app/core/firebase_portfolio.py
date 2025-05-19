@@ -1,7 +1,7 @@
 from fastapi import HTTPException
 from app.core.firebase_init import db
 
-async def create_new_portfolio_firebase(uid: str, ptfid:str, tickers: list, weights: list, dates: list, performance: list, portfolio_name: str = "New Portfolio"):
+async def create_new_portfolio_firebase(uid: str, ptfid:str, tickers: list, weights: list, dates: list, performance: list, portfolio_name: str = "New Portfolio", start_date: str = None):
 	"""Create a new portfolio in Firebase Firestore.
 
 	Args:
@@ -11,6 +11,8 @@ async def create_new_portfolio_firebase(uid: str, ptfid:str, tickers: list, weig
 		weights (list): _list of weights for each stock in the portfolio_
 		dates (list): list of the dates for the portfolio
 		performance (list): list of the daily performance for the portfolio
+		portfolio_name (str): name of the portfolio
+		start_date (str): start date of the portfolio
 	"""
 	# Before, we check if the portfolio does not already exist
 	# Get the user portfolios
@@ -29,7 +31,8 @@ async def create_new_portfolio_firebase(uid: str, ptfid:str, tickers: list, weig
 		"weights": weights,
 		"dates": dates,
 		"performance": performance,
-		"name": portfolio_name
+		"name": portfolio_name,
+		"start_date": start_date
 	}
 	# Save to 'portfolios' collection
 	db.collection("portfolios").document(ptfid).set(portfolio_data)

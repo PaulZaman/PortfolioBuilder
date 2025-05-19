@@ -1,14 +1,14 @@
 import axios from 'axios';
 
 const api = axios.create({
-  baseURL: 'http://localhost:8000', // FastAPI后端地址
+  baseURL: 'http://localhost:8000', // FastAPI backend address
   headers: {
     'Content-Type': 'application/json',
   },
-  withCredentials: true // 允许跨域请求携带凭证
+  withCredentials: true // allow cross-domain requests to carry credentials
 });
 
-// 请求拦截器
+// request interceptor
 api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('token');
@@ -49,7 +49,22 @@ export const authService = {
   },
 
   isAuthenticated() {
-    return !!localStorage.getItem('token');
+    const token = localStorage.getItem('token');
+    if (!token) return false;
+    
+    // check if token is expired
+    try {
+      const tokenData = JSON.parse(atob(token.split('.')[1]));
+      const expirationTime = tokenData.exp * 1000; // convert to milliseconds
+      if (Date.now() >= expirationTime) {
+        this.logout(); // if token is expired, clear it
+        return false;
+      }
+      return true;
+    } catch (e) {
+      this.logout(); // if token is invalid, clear it
+      return false;
+    }
   },
 
   async updateUserInfo(userData) {

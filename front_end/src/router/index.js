@@ -49,16 +49,42 @@ const router = createRouter({
   routes
 });
 
-router.beforeEach((to, from, next) => {
+router.beforeEach(async (to, from, next) => {
   const isAuthenticated = authService.isAuthenticated();
   
-  if (to.meta.requiresAuth && !isAuthenticated) {
-    next('/login');
-  } else if ((to.path === '/login' || to.path === '/register') && isAuthenticated) {
-    next('/home');
-  } else {
-    next();
+  // if requiresAuth
+  if (to.meta.requiresAuth) {
+    if (!isAuthenticated) {
+      // redirect to login page
+      next({ path: '/login', query: { redirect: to.fullPath } });
+      return;
+    }
+    
+    // if authenticated, verify token is valid
+    try {
+      await authService.getUserInfo();
+      next();
+    } catch (error) {
+      // token is invalid, clear and redirect to login page
+      authService.logout();
+      next({ path: '/login', query: { redirect: to.fullPath } });
+    }
+    return;
   }
+  
+  // if authenticated and visiting login/register page
+  if ((to.path === '/login' || to.path === '/register') && isAuthenticated) {
+    next('/home');
+    return;
+  }
+  
+  // if visiting root path
+  if (to.path === '/') {
+    next(isAuthenticated ? '/home' : '/login');
+    return;
+  }
+  
+  next();
 });
 
 export default router; 

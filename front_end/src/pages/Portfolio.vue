@@ -27,10 +27,22 @@
                 No portfolios yet. Click the button above to create a new portfolio.
               </div>
               <div v-else class="portfolio-grid">
-                <el-card v-for="portfolio in portfolios" :key="portfolio.id" class="portfolio-card enhanced-card fade-in">
+                <el-card 
+                  v-for="portfolio in portfolios" 
+                  :key="portfolio.id" 
+                  class="portfolio-card enhanced-card fade-in cursor-pointer"
+                  @click="showPortfolioDetails(portfolio)"
+                >
                   <div class="portfolio-card-header">
                     <h3>{{ portfolio.name }}</h3>
-                    <el-button class="remove-btn gradient-btn" type="danger" size="small" @click="deletePortfolio(portfolio.id)">Delete</el-button>
+                    <el-button 
+                      class="remove-btn gradient-btn" 
+                      type="danger" 
+                      size="small" 
+                      @click.stop="deletePortfolio(portfolio.id)"
+                    >
+                      Delete
+                    </el-button>
                   </div>
                   <div class="portfolio-info">
                     <p>Created: {{ formatDate(portfolio.start_date) }}</p>
@@ -48,6 +60,47 @@
         </el-row>
       </el-main>
     </el-container>
+
+    <!-- Portfolio Details Dialog -->
+    <el-dialog
+      v-model="showDetailsModal"
+      :title="selectedPortfolio?.name"
+      width="80%"
+      class="portfolio-details-dialog"
+    >
+      <div v-if="selectedPortfolio" class="portfolio-details">
+        <div class="portfolio-summary">
+          <div class="summary-item">
+            <span class="label">Start Date:</span>
+            <span class="value">{{ formatDate(selectedPortfolio.start_date) }}</span>
+          </div>
+          <div class="summary-item">
+            <span class="label">Total Return:</span>
+            <span :class="['value', getPerformanceClass(selectedPortfolio.performance?.[selectedPortfolio.performance.length - 1])]">
+              {{ formatPerformance(selectedPortfolio.performance?.[selectedPortfolio.performance.length - 1]) }}
+            </span>
+          </div>
+        </div>
+
+        <!-- Performance Chart -->
+        <div class="performance-chart">
+          <div ref="chartContainer" style="width: 100%; height: 400px;"></div>
+        </div>
+
+        <!-- Holdings Table -->
+        <div class="holdings-table">
+          <h3>Portfolio Holdings</h3>
+          <el-table :data="selectedPortfolio.weightsArray" style="width: 100%">
+            <el-table-column prop="ticker" label="Ticker" width="120" />
+            <el-table-column prop="weight" label="Weight" width="120">
+              <template #default="scope">
+                {{ (scope.row.weight * 100).toFixed(2) }}%
+              </template>
+            </el-table-column>
+          </el-table>
+        </div>
+      </div>
+    </el-dialog>
 
     <!-- Create Portfolio Modal -->
     <el-dialog
@@ -122,9 +175,10 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, nextTick, onUnmounted } from 'vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { portfolioService, marketService } from '../services/api';
+import * as echarts from 'echarts';
 
 const portfolios = ref([]);
 const loading = ref(false);
@@ -132,6 +186,10 @@ const showCreateModal = ref(false);
 const submitting = ref(false);
 const portfolioForm = ref(null);
 const availableStocks = ref([]);
+const showDetailsModal = ref(false);
+const selectedPortfolio = ref(null);
+const chartContainer = ref(null);
+let chart = null;
 
 const newPortfolio = ref({
   name: '',
@@ -313,14 +371,134 @@ const formatDate = (date) => {
     }
     return dateObj.toLocaleDateString('en-US', {
       year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    });
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit'
+    }).replace(/\//g, '-');
   } catch (error) {
     console.error('Date formatting error:', error, 'Date value:', date);
     return 'Invalid date';
   }
 };
+
+const showPortfolioDetails = async (portfolio) => {
+  try {
+    const response = await portfolioService.getPortfolioById(portfolio.id);
+    selectedPortfolio.value = response.data.portfolio;
+    showDetailsModal.value = true;
+    
+    // wait for DOM update and then initialize chart
+    await nextTick();
+    initChart();
+  } catch (error) {
+    console.error('Error loading portfolio details:', error);
+    ElMessage.error('Failed to load portfolio details');
+  }
+};
+
+const initChart = () => {
+  if (!chartContainer.value || !selectedPortfolio.value) return;
+
+  // destroy old chart
+  if (chart) {
+    chart.dispose();
+  }
+
+  // create new chart
+  chart = echarts.init(chartContainer.value);
+  
+  const dates = selectedPortfolio.value.dates.map(date => {
+    const dateObj = new Date(date);
+    return dateObj.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit'
+    }).replace(/\//g, '-');
+  });
+  const performance = selectedPortfolio.value.performance;
+
+  const option = {
+    title: {
+      text: 'Portfolio Performance',
+      left: 'center'
+    },
+    tooltip: {
+      trigger: 'axis',
+      formatter: function(params) {
+        const date = params[0].axisValue;
+        const value = params[0].data;
+        return `${date}<br/>Return: ${value.toFixed(2)}%`;
+      }
+    },
+    xAxis: {
+      type: 'category',
+      data: dates,
+      axisLabel: {
+        rotate: 45,
+        formatter: function(value) {
+          return value;
+        }
+      }
+    },
+    yAxis: {
+      type: 'value',
+      axisLabel: {
+        formatter: '{value}%'
+      }
+    },
+    series: [{
+      name: 'Portfolio Return',
+      type: 'line',
+      data: performance,
+      smooth: true,
+      lineStyle: {
+        width: 3
+      },
+      areaStyle: {
+        opacity: 0.1
+      }
+    }],
+    grid: {
+      left: '3%',
+      right: '4%',
+      bottom: '15%',
+      containLabel: true
+    }
+  };
+
+  chart.setOption(option);
+};
+
+const formatPerformance = (value) => {
+  if (value === null || value === undefined) return 'N/A';
+  const percentage = value * 100;  // Convert decimal to percentage
+  return `${percentage > 0 ? '+' : ''}${percentage.toFixed(2)}%`;
+};
+
+const getPerformanceClass = (value) => {
+  if (value === null || value === undefined) return '';
+  return value > 0 ? 'text-green-500' : 'text-red-500';
+};
+
+// listen to window size change and adjust chart size
+window.addEventListener('resize', () => {
+  if (chart) {
+    chart.resize();
+  }
+});
+
+// clean up when component unmounts
+onUnmounted(() => {
+  if (chart) {
+    chart.dispose();
+  }
+  window.removeEventListener('resize', () => {
+    if (chart) {
+      chart.resize();
+    }
+  });
+});
 
 onMounted(() => {
   loadPortfolios();
@@ -549,5 +727,60 @@ body, .portfolio-container {
   font-family: 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', Arial, sans-serif;
   font-weight: 400;
   letter-spacing: 0.1px;
+}
+
+.portfolio-details {
+  padding: 20px;
+}
+
+.portfolio-summary {
+  display: flex;
+  gap: 40px;
+  margin-bottom: 30px;
+}
+
+.summary-item {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.summary-item .label {
+  font-size: 14px;
+  color: #666;
+}
+
+.summary-item .value {
+  font-size: 24px;
+  font-weight: 600;
+}
+
+.performance-chart {
+  margin: 30px 0;
+  background: #fff;
+  border-radius: 8px;
+  padding: 20px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
+}
+
+.holdings-table {
+  margin-top: 30px;
+}
+
+.holdings-table h3 {
+  margin-bottom: 20px;
+  color: #2c3e50;
+}
+
+.cursor-pointer {
+  cursor: pointer;
+}
+
+.text-green-500 {
+  color: #67c23a;
+}
+
+.text-red-500 {
+  color: #f56c6c;
 }
 </style>

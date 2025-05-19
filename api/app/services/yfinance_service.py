@@ -38,12 +38,18 @@ def get_daily_performance(tickers):
     
 def get_stock_data(tickers, start_date=None, end_date=None):
     try:
+        print("Getting stock data for tickers:", tickers)
+        print("Start date:", start_date)
+        print("End date:", end_date)
+
         # If start date is not none, remove 1 day from it
         if start_date is not None:
             start_date = pd.to_datetime(start_date) - pd.Timedelta(days=1)
             start_date = start_date.strftime("%Y-%m-%d")
+            print("Adjusted start date:", start_date)
 
         data = yf.download(tickers, start=start_date, end=end_date, group_by='ticker', auto_adjust=False)
+        print("Downloaded data shape:", data.shape)
 
         if isinstance(tickers, str):
             # Single ticker
@@ -58,13 +64,18 @@ def get_stock_data(tickers, start_date=None, end_date=None):
             close_data = close_data.reset_index()
             data = close_data
         
+        print("Processed data before returns calculation:", data.head())
+        
         # convert to daily performance
         for ticker in data.columns[1:]:
             data[ticker] = data[ticker].pct_change()
             data[ticker] = data[ticker].round(8)
+            print(f"Returns for {ticker}:", data[ticker].head())
 
         # Dropna
         data = data.dropna()
+        print("Final data shape:", data.shape)
+        print("Final data sample:", data.head())
 
         return data
     except Exception as e:

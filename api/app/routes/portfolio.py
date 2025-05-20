@@ -3,7 +3,7 @@ from app.core.firebase_init import db
 from app.core.firebase_auth import verify_token
 import uuid
 from typing import Optional
-from app.services.yfinance_service import get_stock_data
+from app.services.yfinance_service import get_stock_data, get_info
 from app.models.portfolio import Portfolio
 from app.core.firebase_watchlist import get_all_stocks_firebase
 from app.core.firebase_portfolio import create_new_portfolio_firebase, get_user_portfolios_firebase, delete_portfolio_firebase, get_portfolio_firebase
@@ -193,3 +193,20 @@ async def get_portfolio(
         return portfolio
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Error fetching portfolio: {str(e)}")
+
+@router.get("/get/ticker-info/{ticker}")
+async def get_ticker_info(ticker: str, user=Depends(verify_token)):
+    try:
+        # Make sure the ticker is valid
+        available_stocks = await get_all_stocks_firebase()
+        available_tickers = [stock["ticker"] for stock in available_stocks]
+        if ticker not in available_tickers:
+            raise HTTPException(status_code=400, detail=f"Ticker {ticker} is not available")
+        
+        # Fetch the ticker info using yfinance
+        extracted_info = get_info(ticker)
+        
+        # Return the extracted information
+        return extracted_info
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Error fetching ticker info: {str(e)}")

@@ -8,6 +8,33 @@ from typing import Iterable, Dict
 
 
 
+def get_info(ticker):
+    """
+    Fetch and return key information about a stock ticker using yfinance.
+
+    Args:
+        ticker_symbol (str): The stock ticker symbol (e.g., 'AAPL', 'TSLA').
+
+    Returns:
+        dict: Dictionary containing relevant info about the company.
+    """
+    try:
+        ticker = yf.Ticker(ticker)
+        info = ticker.info  # Contains all metadata
+        
+        keys_to_extract = [
+            "longName", "sector", "industry", "country", "quoteType", "market", 
+            "marketCap", "previousClose", "open", "dayHigh", "dayLow",
+            "fiftyTwoWeekHigh", "fiftyTwoWeekLow", "trailingPE", "forwardPE",
+            "dividendYield", "beta", "volume", "averageVolume", "longBusinessSummary"
+        ]
+
+        extracted_info = {key: info.get(key, None) for key in keys_to_extract}
+        return extracted_info   
+    except Exception as e:
+        print(f"Error fetching data for {ticker}: {e}")
+        return None
+
 def get_daily_performance(tickers):
     try:
         data = yf.download(tickers, period="2d", group_by='ticker', auto_adjust=False)
@@ -83,8 +110,6 @@ def get_stock_data(tickers, start_date=None, end_date=None):
         return None
 
 # ─────────────────────────────────────────────────────────────────────────────
-
-
 
 __all__ = [
     "INTRADAY_LIMIT_DAYS",

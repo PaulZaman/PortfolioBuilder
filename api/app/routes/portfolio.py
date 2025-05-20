@@ -1,13 +1,15 @@
-from fastapi import APIRouter, Depends, HTTPException, Body
+from fastapi import APIRouter, Depends, HTTPException, Body, Query
 from app.core.firebase_init import db
 from app.core.firebase_auth import verify_token
 import uuid
+from typing import Optional
 from app.services.yfinance_service import get_stock_data
 from app.models.portfolio import Portfolio
 from app.core.firebase_watchlist import get_all_stocks_firebase
 from app.core.firebase_portfolio import create_new_portfolio_firebase, get_user_portfolios_firebase, delete_portfolio_firebase, get_portfolio_firebase
 from app.optimizitation.optimize import optimize_portfolio
 import datetime
+from app.services.datamanip import adjust_portfolio
 
 
 router = APIRouter(prefix="/api/portfolios", tags=["Portfolios"])
@@ -131,25 +133,17 @@ async def create_portfolio(portfolio: Portfolio, user=Depends(verify_token)):
         
         # Get the porformance of the tickers
         performances = get_stock_data(portfolio.tickers, start_date=portfolio.start_date)
-        print("Stock performances:", performances)
 
         # Multiply the performance by the weights
         performances['ptf'] = performances[portfolio.tickers].multiply(portfolio.weights, axis=1).sum(axis=1)
-        print("Portfolio performance:", performances['ptf'])
 
         # Calculate cumulative returns
-        performances['cumulative_ptf'] = (1 + performances['ptf']).cumprod() - 1
-        print("Cumulative portfolio performance:", performances['cumulative_ptf'])
 
         # Create a new portfolio in Firebase Firestore
         ptfid = str(uuid.uuid4())
-        print("Creating portfolio with data:", {
-            "dates": performances['Date'].tolist(),
-            "performance": performances['cumulative_ptf'].tolist()
-        })
         ptf = await create_new_portfolio_firebase(
             uid, ptfid, portfolio.tickers, portfolio.weights, 
-            performances['Date'].tolist(), performances['cumulative_ptf'].tolist(), 
+            performances['Date'].tolist(), performances['ptf'].tolist(), 
             portfolio.name, portfolio.start_date.isoformat())
 
         # Return the portfolio data
@@ -177,10 +171,25 @@ async def delete_portfolio(ptfid: str, user=Depends(verify_token)):
         raise HTTPException(status_code=400, detail=f"Error deleting portfolio: {str(e)}")
     
 @router.get("/get/{ptfid}")
-async def get_portfolio(ptfid: str, user=Depends(verify_token)):
+async def get_portfolio(
+    ptfid: str,
+    user=Depends(verify_token),
+    start_date: Optional[str] = Query(None, description="Start date in YYYY-MM-DD format"),
+    end_date: Optional[str] = Query(None, description="End date in YYYY-MM-DD format"),
+    time_frame: str = Query("daily", description="Time frame: daily, weekly, monthly, quarterly")
+):
     try:
         uid = user["localId"]
         portfolio = await get_portfolio_firebase(ptfid)
-        return {"portfolio": portfolio}
+
+        # Adjusts the portfolio based on the start and end dates, and calculates the metrics
+        portfolio = adjust_portfolio(
+            portfolio=portfolio,
+            start_date=start_date,
+            end_date=end_date,
+            time_frame=time_frame
+        )
+
+        return portfolio
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Error fetching portfolio: {str(e)}")

@@ -78,6 +78,10 @@ async def get_portfolio_firebase(ptfid: str):
 
 	Args:
 		ptfid (str): The portfolio's unique identifier.
+		start_date (str, optional): Filter from this date (inclusive). Format: YYYY-MM-DD.
+		end_date (str, optional): Filter up to this date (inclusive). Format: YYYY-MM-DD.
+		time_frame (str): Aggregation level. One of "daily", "weekly", "monthly", "quarterly", "yearly".
+
 
 	Returns:
 		dict: The portfolio data.
@@ -87,8 +91,10 @@ async def get_portfolio_firebase(ptfid: str):
 
 	if not ptf_doc.exists:
 		raise HTTPException(status_code=404, detail="Portfolio not found")
+	
+	ptf_data = ptf_doc.to_dict()
 
-	return ptf_doc.to_dict()
+	return ptf_data
 
 async def delete_portfolio_firebase(uid: str, ptfid: str):
 	"""Delete a portfolio from Firebase Firestore.

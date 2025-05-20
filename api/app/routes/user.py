@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends
-from app.models.user import UserSignup, UserLogin
+from app.models.user import UserSignup, UserLogin, UserUpdate
 from app.core.firebase_auth import signup_user, login_user, verify_token
 from app.core.firebase_init import db
 from app.core.firebase_watchlist import get_all_stocks_firebase, add_to_watchlist_firebase, remove_from_watchlist_firebase, get_user_watchlist_firebase
@@ -63,6 +63,36 @@ async def login(user: UserLogin):
             status_code=400,
             detail=f"Login failed: {str(e)}"
         )
+
+@router.put("/user-update")
+async def update_user_info(update: UserUpdate, user=Depends(verify_token)):
+    try:
+        uid = user["localId"]
+        logger.info(f"Updating user info for UID: {uid}")
+
+        doc_ref = db.collection("users").document(uid)
+        doc = doc_ref.get()
+
+        if not doc.exists:
+            raise HTTPException(status_code=404, detail="User not found")
+
+        updates = {}
+        if update.first_name is not None:
+            updates["first_name"] = update.first_name
+        if update.last_name is not None:
+            updates["last_name"] = update.last_name
+
+        if not updates:
+            raise HTTPException(status_code=400, detail="No update fields provided")
+
+        doc_ref.update(updates)
+        logger.info(f"User data updated: {updates}")
+
+        return {"message": "User information updated successfully", "updates": updates}
+
+    except Exception as e:
+        logger.error(f"Error updating user info: {str(e)}")
+        raise HTTPException(status_code=400, detail=str(e))
 
 @router.get("/protected")
 async def protected_route(user=Depends(verify_token)):

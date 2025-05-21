@@ -85,6 +85,9 @@ def adjust_portfolio(portfolio, start_date=None, end_date=None, time_frame=None)
 	if time_frame is None:
 		time_frame = "daily"
 
+	# Filter for dates
+	performances = filter_for_dates(performances, start_date, end_date)
+
 	# Create a dataframe for the portfolio
 	performances = pd.DataFrame(columns=["date", "ptf"])
 	performances["date"] = pd.to_datetime(portfolio['dates'])
@@ -94,9 +97,6 @@ def adjust_portfolio(portfolio, start_date=None, end_date=None, time_frame=None)
 	daily_performance = performances['ptf'].copy()
 	mean_daily_return = daily_performance.mean()
 	max_dd = get_max_drawdown(daily_performance)
-
-	# Filter for dates
-	performances = filter_for_dates(performances, start_date, end_date)
 
 	# Adjust time frame
 	performances = adjust_time_frame(performances, time_frame)

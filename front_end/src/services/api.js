@@ -105,8 +105,8 @@ export const portfolioService = {
     return await api.get('/api/portfolios/get');
   },
 
-  async getPortfolioById(id) {
-    return await api.get(`/api/portfolios/get/${id}`);
+  async getPortfolioById(id, params = {}) {
+    return await api.get(`/api/portfolios/get/${id}`, { params });
   },
 
   async createPortfolio(portfolioData) {
@@ -115,6 +115,10 @@ export const portfolioService = {
 
   async deletePortfolio(id) {
     return await api.delete(`/api/portfolios/delete/${id}`);
+  },
+
+  async getTickerInfo(ticker) {
+    return await api.get(`/api/portfolios/get/ticker-info/${ticker}`);
   }
 };
 

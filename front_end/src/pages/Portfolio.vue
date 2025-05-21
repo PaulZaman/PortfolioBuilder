@@ -69,6 +69,30 @@
       class="portfolio-details-dialog"
     >
       <div v-if="selectedPortfolio" class="portfolio-details">
+        <!-- Time Frame Selection -->
+        <div class="time-frame-selection">
+          <el-select v-model="selectedTimeFrame" class="time-frame-select" @change="handleTimeFrameChange">
+            <el-option label="Daily" value="daily" />
+            <el-option label="Weekly" value="weekly" />
+            <el-option label="Monthly" value="monthly" />
+            <el-option label="Quarterly" value="quarterly" />
+          </el-select>
+          
+          <el-date-picker
+            v-model="selectedStartDate"
+            type="date"
+            placeholder="Start Date"
+            @change="handleDateChange"
+          />
+          
+          <el-date-picker
+            v-model="selectedEndDate"
+            type="date"
+            placeholder="End Date"
+            @change="handleDateChange"
+          />
+        </div>
+
         <div class="portfolio-summary">
           <div class="summary-item">
             <span class="label">Start Date:</span>
@@ -80,6 +104,45 @@
               {{ formatPerformance(selectedPortfolio.performance?.[selectedPortfolio.performance.length - 1]) }}
             </span>
           </div>
+          <div class="summary-item" v-if="selectedPortfolio.metrics">
+            <div class="metric-header">
+              <span class="label">Sharpe Ratio</span>
+              <el-tooltip
+                content="Annualized risk-adjusted return based on daily data"
+                placement="top"
+                effect="light"
+              >
+                <el-icon class="info-icon"><InfoFilled /></el-icon>
+              </el-tooltip>
+            </div>
+            <span class="value">{{ selectedPortfolio.metrics.sharpe_ratio?.toFixed(2) || 'N/A' }}</span>
+          </div>
+          <div class="summary-item" v-if="selectedPortfolio.metrics">
+            <div class="metric-header">
+              <span class="label">Max Drawdown</span>
+              <el-tooltip
+                content="Maximum observed loss from peak to trough, calculated from daily data"
+                placement="top"
+                effect="light"
+              >
+                <el-icon class="info-icon"><InfoFilled /></el-icon>
+              </el-tooltip>
+            </div>
+            <span class="value text-red-500">{{ (selectedPortfolio.metrics.max_drawdown * 100)?.toFixed(2) || 'N/A' }}%</span>
+          </div>
+          <div class="summary-item" v-if="selectedPortfolio.metrics">
+            <div class="metric-header">
+              <span class="label">Volatility</span>
+              <el-tooltip
+                content="Annualized standard deviation of returns, calculated from daily data"
+                placement="top"
+                effect="light"
+              >
+                <el-icon class="info-icon"><InfoFilled /></el-icon>
+              </el-tooltip>
+            </div>
+            <span class="value">{{ (selectedPortfolio.metrics.volatility * 100)?.toFixed(2) || 'N/A' }}%</span>
+          </div>
         </div>
 
         <!-- Performance Chart -->
@@ -90,9 +153,24 @@
         <!-- Holdings Table -->
         <div class="holdings-table">
           <h3>Portfolio Holdings</h3>
-          <el-table :data="selectedPortfolio.weightsArray" style="width: 100%">
-            <el-table-column prop="ticker" label="Ticker" width="120" />
-            <el-table-column prop="weight" label="Weight" width="120">
+          <el-table 
+            :data="selectedPortfolio.weightsArray" 
+            style="width: 100%"
+            :cell-style="{ textAlign: 'center' }"
+            :header-cell-style="{ textAlign: 'center' }"
+          >
+            <el-table-column prop="ticker" label="Ticker" min-width="200">
+              <template #default="scope">
+                <el-button 
+                  type="text" 
+                  @click="showStockInfo(scope.row.ticker)"
+                  class="ticker-link"
+                >
+                  {{ scope.row.ticker }}
+                </el-button>
+              </template>
+            </el-table-column>
+            <el-table-column prop="weight" label="Weight" min-width="200">
               <template #default="scope">
                 {{ (scope.row.weight * 100).toFixed(2) }}%
               </template>
@@ -171,12 +249,67 @@
         </span>
       </template>
     </el-dialog>
+
+    <!-- Stock Info Dialog -->
+    <el-dialog
+      v-model="showStockInfoModal"
+      :title="selectedStock?.ticker"
+      width="50%"
+      class="stock-info-dialog"
+    >
+      <div v-if="selectedStock" class="stock-info">
+        <div class="info-section">
+          <h4>Basic Information</h4>
+          <div class="info-grid">
+            <div class="info-item">
+              <span class="label">Company Name</span>
+              <span class="value">{{ selectedStock.name || selectedStock.shortName || selectedStock.longName || 'N/A' }}</span>
+            </div>
+            <div class="info-item">
+              <span class="label">Sector</span>
+              <span class="value">{{ selectedStock.sector || 'N/A' }}</span>
+            </div>
+            <div class="info-item">
+              <span class="label">Market Cap</span>
+              <span class="value">{{ formatMarketCap(selectedStock.marketCap) }}</span>
+            </div>
+            <div class="info-item">
+              <span class="label">P/E Ratio</span>
+              <span class="value">{{ selectedStock.forwardPE?.toFixed(2) || 'N/A' }}</span>
+            </div>
+          </div>
+        </div>
+        
+        <div class="info-section">
+          <h4>Financial Metrics</h4>
+          <div class="info-grid">
+            <div class="info-item">
+              <span class="label">52 Week High</span>
+              <span class="value">{{ selectedStock.fiftyTwoWeekHigh?.toFixed(2) || 'N/A' }}</span>
+            </div>
+            <div class="info-item">
+              <span class="label">52 Week Low</span>
+              <span class="value">{{ selectedStock.fiftyTwoWeekLow?.toFixed(2) || 'N/A' }}</span>
+            </div>
+            <div class="info-item">
+              <span class="label">Dividend Yield</span>
+              <span class="value">{{ (selectedStock.dividendYield * 100)?.toFixed(2) || 'N/A' }}%</span>
+            </div>
+            <div class="info-item">
+              <span class="label">Beta</span>
+              <span class="value">{{ selectedStock.beta?.toFixed(2) || 'N/A' }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </el-dialog>
   </div>
 </template>
 
 <script setup>
 import { ref, onMounted, nextTick, onUnmounted } from 'vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
+import { InfoFilled } from '@element-plus/icons-vue';
 import { portfolioService, marketService } from '../services/api';
 import * as echarts from 'echarts';
 
@@ -382,92 +515,164 @@ const formatDate = (date) => {
   }
 };
 
+const handleTimeFrameChange = () => {
+  if (selectedPortfolio.value) {
+    showPortfolioDetails(selectedPortfolio.value);
+  }
+};
+
+const handleDateChange = () => {
+  if (selectedPortfolio.value) {
+    showPortfolioDetails(selectedPortfolio.value);
+  }
+};
+
 const showPortfolioDetails = async (portfolio) => {
   try {
-    const response = await portfolioService.getPortfolioById(portfolio.id);
-    selectedPortfolio.value = response.data.portfolio;
+    console.log('Showing portfolio details for:', portfolio);
+    if (!portfolio || !portfolio.ptfid) {
+      throw new Error('Invalid portfolio data');
+    }
+
+    const params = {
+      time_frame: selectedTimeFrame.value,
+      start_date: selectedStartDate.value ? selectedStartDate.value.toISOString().split('T')[0] : null,
+      end_date: selectedEndDate.value ? selectedEndDate.value.toISOString().split('T')[0] : null
+    };
+    console.log('Request params:', params);
+    
+    const response = await portfolioService.getPortfolioById(portfolio.ptfid, params);
+    console.log('Portfolio details response:', response);
+    
+    if (!response.data) {
+      throw new Error('No data received from server');
+    }
+
+    // update selected portfolio data
+    const updatedPortfolio = {
+      ...response.data,
+      weightsArray: response.data.tickers.map((ticker, index) => ({
+        ticker,
+        weight: parseFloat(response.data.weights[index])
+      }))
+    };
+
+    // handle metrics data
+    if (response.data.metrics) {
+      updatedPortfolio.metrics = {
+        sharpe_ratio: parseFloat(response.data.metrics.sharpe_ratio) || null,
+        max_drawdown: parseFloat(response.data.metrics.max_drawdown) || null,
+        volatility: parseFloat(response.data.metrics.volatility) || null
+      };
+    } else {
+      updatedPortfolio.metrics = {
+        sharpe_ratio: null,
+        max_drawdown: null,
+        volatility: null
+      };
+    }
+
+    selectedPortfolio.value = updatedPortfolio;
     showDetailsModal.value = true;
     
-    // wait for DOM update and then initialize chart
     await nextTick();
     initChart();
   } catch (error) {
     console.error('Error loading portfolio details:', error);
-    ElMessage.error('Failed to load portfolio details');
+    ElMessage.error('Failed to load portfolio details: ' + (error.response?.data?.detail || error.message));
   }
 };
 
 const initChart = () => {
-  if (!chartContainer.value || !selectedPortfolio.value) return;
+  if (!chartContainer.value || !selectedPortfolio.value) {
+    console.error('Chart initialization failed: missing container or portfolio data');
+    return;
+  }
+
+  console.log('Initializing chart with data:', selectedPortfolio.value);
 
   // destroy old chart
   if (chart) {
     chart.dispose();
   }
 
-  // create new chart
-  chart = echarts.init(chartContainer.value);
-  
-  const dates = selectedPortfolio.value.dates.map(date => {
-    const dateObj = new Date(date);
-    return dateObj.toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit'
-    }).replace(/\//g, '-');
-  });
-  const performance = selectedPortfolio.value.performance;
-
-  const option = {
-    title: {
-      text: 'Portfolio Performance',
-      left: 'center'
-    },
-    tooltip: {
-      trigger: 'axis',
-      formatter: function(params) {
-        const date = params[0].axisValue;
-        const value = params[0].data;
-        return `${date}<br/>Return: ${value.toFixed(2)}%`;
-      }
-    },
-    xAxis: {
-      type: 'category',
-      data: dates,
-      axisLabel: {
-        rotate: 45,
-        formatter: function(value) {
-          return value;
-        }
-      }
-    },
-    yAxis: {
-      type: 'value',
-      axisLabel: {
-        formatter: '{value}%'
-      }
-    },
-    series: [{
-      name: 'Portfolio Return',
-      type: 'line',
-      data: performance,
-      smooth: true,
-      lineStyle: {
-        width: 3
-      },
-      areaStyle: {
-        opacity: 0.1
-      }
-    }],
-    grid: {
-      left: '3%',
-      right: '4%',
-      bottom: '15%',
-      containLabel: true
+  try {
+    // create new chart
+    chart = echarts.init(chartContainer.value);
+    
+    // check necessary data
+    if (!selectedPortfolio.value.performance || !Array.isArray(selectedPortfolio.value.performance)) {
+      throw new Error('Missing or invalid performance data');
     }
-  };
 
-  chart.setOption(option);
+    // generate date array (if no date data, use index as x-axis)
+    const dates = selectedPortfolio.value.dates || 
+                 Array.from({length: selectedPortfolio.value.performance.length}, (_, i) => 
+                   new Date(Date.now() - (selectedPortfolio.value.performance.length - i) * 24 * 60 * 60 * 1000)
+                     .toLocaleDateString('en-US', {
+                       year: 'numeric',
+                       month: '2-digit',
+                       day: '2-digit'
+                     }).replace(/\//g, '-')
+                 );
+
+    const performance = selectedPortfolio.value.performance;
+
+    const option = {
+      title: {
+        text: 'Portfolio Performance',
+        left: 'center'
+      },
+      tooltip: {
+        trigger: 'axis',
+        formatter: function(params) {
+          const date = params[0].axisValue;
+          const value = params[0].data;
+          return `${date}<br/>Return: ${value.toFixed(2)}%`;
+        }
+      },
+      xAxis: {
+        type: 'category',
+        data: dates,
+        axisLabel: {
+          rotate: 45,
+          formatter: function(value) {
+            return value;
+          }
+        }
+      },
+      yAxis: {
+        type: 'value',
+        axisLabel: {
+          formatter: '{value}%'
+        }
+      },
+      series: [{
+        name: 'Portfolio Return',
+        type: 'line',
+        data: performance,
+        smooth: true,
+        lineStyle: {
+          width: 3
+        },
+        areaStyle: {
+          opacity: 0.1
+        }
+      }],
+      grid: {
+        left: '3%',
+        right: '4%',
+        bottom: '15%',
+        containLabel: true
+      }
+    };
+
+    chart.setOption(option);
+    console.log('Chart initialized successfully');
+  } catch (error) {
+    console.error('Error initializing chart:', error);
+    ElMessage.error('Failed to initialize chart: ' + error.message);
+  }
 };
 
 const formatPerformance = (value) => {
@@ -499,6 +704,36 @@ onUnmounted(() => {
     }
   });
 });
+
+// Add new refs for time frame and date selection
+const selectedTimeFrame = ref('daily');
+const selectedStartDate = ref(null);
+const selectedEndDate = ref(null);
+
+// Add new reactive variables
+const showStockInfoModal = ref(false);
+const selectedStock = ref(null);
+
+// Add new methods
+const showStockInfo = async (ticker) => {
+  try {
+    const response = await portfolioService.getTickerInfo(ticker);
+    console.log('Stock info response:', response.data);
+    selectedStock.value = response.data;
+    showStockInfoModal.value = true;
+  } catch (error) {
+    console.error('Error loading stock info:', error);
+    ElMessage.error('Failed to load stock information: ' + (error.response?.data?.detail || error.message));
+  }
+};
+
+const formatMarketCap = (value) => {
+  if (!value) return 'N/A';
+  if (value >= 1e12) return `$${(value / 1e12).toFixed(2)}T`;
+  if (value >= 1e9) return `$${(value / 1e9).toFixed(2)}B`;
+  if (value >= 1e6) return `$${(value / 1e6).toFixed(2)}M`;
+  return `$${value.toFixed(2)}`;
+};
 
 onMounted(() => {
   loadPortfolios();
@@ -765,11 +1000,17 @@ body, .portfolio-container {
 
 .holdings-table {
   margin-top: 30px;
+  background: #fff;
+  border-radius: 8px;
+  padding: 20px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
 }
 
 .holdings-table h3 {
   margin-bottom: 20px;
   color: #2c3e50;
+  font-size: 18px;
+  font-weight: 600;
 }
 
 .cursor-pointer {
@@ -782,5 +1023,135 @@ body, .portfolio-container {
 
 .text-red-500 {
   color: #f56c6c;
+}
+
+.time-frame-selection {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 24px;
+  align-items: center;
+}
+
+.time-frame-select {
+  width: 150px;
+}
+
+.summary-item {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 16px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  min-width: 200px;
+}
+
+.summary-item .label {
+  font-size: 14px;
+  color: #666;
+}
+
+.summary-item .value {
+  font-size: 24px;
+  font-weight: 600;
+}
+
+:deep(.el-table) {
+  --el-table-border-color: #ebeef5;
+  --el-table-header-bg-color: #f5f7fa;
+  width: 100% !important;
+}
+
+:deep(.el-table__header) {
+  width: 100% !important;
+}
+
+:deep(.el-table__body) {
+  width: 100% !important;
+}
+
+:deep(.el-table__cell) {
+  text-align: center !important;
+}
+
+:deep(.el-table th) {
+  font-weight: 600;
+  color: #2c3e50;
+  text-align: center !important;
+}
+
+:deep(.el-table td) {
+  color: #606266;
+  text-align: center !important;
+}
+
+.metric-note {
+  font-size: 12px;
+  color: #909399;
+  margin-top: 4px;
+}
+
+.ticker-link {
+  color: #409EFF;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.ticker-link:hover {
+  color: #66b1ff;
+  text-decoration: underline;
+}
+
+.stock-info {
+  padding: 20px;
+}
+
+.info-section {
+  margin-bottom: 24px;
+}
+
+.info-section h4 {
+  margin-bottom: 16px;
+  color: #2c3e50;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.info-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+}
+
+.info-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px;
+  background: #f8f9fa;
+  border-radius: 8px;
+}
+
+.info-item .label {
+  font-size: 12px;
+  color: #666;
+}
+
+.info-item .value {
+  font-size: 16px;
+  font-weight: 500;
+  color: #2c3e50;
+}
+
+.metric-header {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.info-icon {
+  color: #909399;
+  font-size: 14px;
+  cursor: help;
 }
 </style>

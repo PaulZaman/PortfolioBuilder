@@ -12,6 +12,10 @@ def filter_for_dates(performances, start_date, end_date):
 	Returns:
 		df: Filtered DataFrame.
 	"""
+	performances['date'] = pd.to_datetime(performances['date'], utc=True)
+	start_date = pd.to_datetime(start_date).tz_localize('UTC') if pd.to_datetime(start_date).tzinfo is None else pd.to_datetime(start_date)
+	end_date = pd.to_datetime(end_date).tz_localize('UTC') if pd.to_datetime(end_date).tzinfo is None else pd.to_datetime(end_date)
+	# Filter the DataFrame for the specified date range
 	return performances[performances['date'].between(start_date, end_date)].reset_index(drop=True)
 
 def adjust_time_frame(performances, time_frame):
@@ -84,18 +88,19 @@ def adjust_portfolio(portfolio, start_date=None, end_date=None, time_frame=None)
 	# If no time frame is provided, use daily
 	if time_frame is None:
 		time_frame = "daily"
-
-	# Filter for dates
-	performances = filter_for_dates(performances, start_date, end_date)
+	start_date = pd.to_datetime(start_date)
+	end_date = pd.to_datetime(end_date)
 
 	# Create a dataframe for the portfolio
 	performances = pd.DataFrame(columns=["date", "ptf"])
 	performances["date"] = pd.to_datetime(portfolio['dates'])
 	performances['ptf'] = portfolio['performance']
 
+	# Filter for dates
+	performances = filter_for_dates(performances, start_date, end_date)
+
 	# Calculate the mean daily return before adjusting the portfolio
 	daily_performance = performances['ptf'].copy()
-	mean_daily_return = daily_performance.mean()
 	max_dd = get_max_drawdown(daily_performance)
 
 	# Adjust time frame
@@ -104,8 +109,7 @@ def adjust_portfolio(portfolio, start_date=None, end_date=None, time_frame=None)
 	# Calculate cumulative returns
 	performances["ptf_cum"] = (1 + performances["ptf"]).cumprod() - 1
 
-
-		# === RISK & RETURN METRICS ===
+	# === RISK & RETURN METRICS ===
 	mean_daily_return = daily_performance.mean()
 	std_daily_return = daily_performance.std()
 	volatility = std_daily_return * np.sqrt(252)  # Annualized
@@ -118,7 +122,6 @@ def adjust_portfolio(portfolio, start_date=None, end_date=None, time_frame=None)
 	worst_return = daily_performance.min()
 
 	# === DRAWDOWN METRICS ===
-	max_dd = get_max_drawdown(daily_performance)
 	calmar_ratio = ((1 + mean_daily_return) ** 252 - 1) / abs(max_dd)
 
 	# === FINAL METRICS DICT ===

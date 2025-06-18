@@ -146,7 +146,7 @@ async def create_portfolio(portfolio: Portfolio, user=Depends(verify_token)):
             performances['Date'].tolist(), performances['ptf'].tolist(), 
             portfolio.name, portfolio.start_date.isoformat())
 
-        # Return the portfolio data
+        # Return the portfolio data²
         return {"message": "Portfolio created successfully", "portfolio": ptf}
 
     except Exception as e:
@@ -194,19 +194,20 @@ async def get_portfolio(
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Error fetching portfolio: {str(e)}")
 
-@router.get("/get/ticker-info/{ticker}")
-async def get_ticker_info(ticker: str, user=Depends(verify_token)):
-    try:
-        # Make sure the ticker is valid
-        available_stocks = await get_all_stocks_firebase()
-        available_tickers = [stock["ticker"] for stock in available_stocks]
-        if ticker not in available_tickers:
-            raise HTTPException(status_code=400, detail=f"Ticker {ticker} is not available")
-        
-        # Fetch the ticker info using yfinance
-        extracted_info = get_info(ticker)
-        
-        # Return the extracted information
-        return extracted_info
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=f"Error fetching ticker info: {str(e)}")
+@router.get("/metrics")
+async def get_metric_definitions(user=Depends(verify_token),):
+    metric_definitions = {
+        "total_cum_return": "Total cumulative return over the full period.",
+        "mean_yearly_return": "Average annualized return based on daily mean return.",
+        "mean_daily_return": "Average return per trading day.",
+        "volatility": "Annualized standard deviation of daily returns.",
+        "sharpe_ratio": "Annualized Sharpe ratio: return per unit of total risk.",
+        "sortino_ratio": "Annualized Sortino ratio: return per unit of downside risk.",
+        "calmar_ratio": "Annualized Calmar ratio: return divided by maximum drawdown.",
+        "max_drawdown": "Maximum observed loss from a peak to a trough.",
+        "hit_ratio": "Proportion of days with positive returns.",
+        "best_daily_return": "Highest single-day return.",
+        "worst_daily_return": "Lowest single-day return."
+    }
+
+    return metric_definitions

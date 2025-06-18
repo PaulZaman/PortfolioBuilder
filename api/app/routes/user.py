@@ -125,7 +125,6 @@ async def get_user_info(user=Depends(verify_token)):
         logger.error(f"Error fetching user info: {str(e)}")
         raise HTTPException(status_code=400, detail=str(e))
 
-
 @router.get("/stocks")
 async def get_all_stocks():
     try:

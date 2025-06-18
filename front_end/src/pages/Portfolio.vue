@@ -301,6 +301,13 @@
             </div>
           </div>
         </div>
+
+        <div class="info-section">
+          <h4>Company Overview</h4>
+          <div class="company-description">
+            <p>{{ selectedStock.longBusinessSummary || 'No company description available.' }}</p>
+          </div>
+        </div>
       </div>
     </el-dialog>
   </div>
@@ -1153,5 +1160,22 @@ body, .portfolio-container {
   color: #909399;
   font-size: 14px;
   cursor: help;
+}
+
+.company-description {
+  background: #f8f9fa;
+  border-radius: 8px;
+  padding: 16px;
+  margin-top: 8px;
+  line-height: 1.6;
+  color: #2c3e50;
+  font-size: 14px;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.company-description p {
+  margin: 0;
+  white-space: pre-wrap;
 }
 </style>

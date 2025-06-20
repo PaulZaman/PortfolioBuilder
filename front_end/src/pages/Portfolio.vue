@@ -91,6 +91,12 @@
             placeholder="End Date"
             @change="handleDateChange"
           />
+
+          <!-- Chart Type Toggle -->
+          <el-radio-group v-model="chartType" @change="handleChartTypeChange" class="chart-type-toggle">
+            <el-radio-button label="cumulative">Cumulative Return</el-radio-button>
+            <el-radio-button label="daily">Daily Return</el-radio-button>
+          </el-radio-group>
         </div>
 
         <div class="portfolio-summary">
@@ -108,7 +114,7 @@
             <div class="metric-header">
               <span class="label">Sharpe Ratio</span>
               <el-tooltip
-                content="Annualized risk-adjusted return based on daily data"
+                :content="metricsDefinitions?.sharpe_ratio || 'Annualized risk-adjusted return based on daily data'"
                 placement="top"
                 effect="light"
               >
@@ -121,7 +127,7 @@
             <div class="metric-header">
               <span class="label">Max Drawdown</span>
               <el-tooltip
-                content="Maximum observed loss from peak to trough, calculated from daily data"
+                :content="metricsDefinitions?.max_drawdown || 'Maximum observed loss from peak to trough, calculated from daily data'"
                 placement="top"
                 effect="light"
               >
@@ -134,7 +140,7 @@
             <div class="metric-header">
               <span class="label">Volatility</span>
               <el-tooltip
-                content="Annualized standard deviation of returns, calculated from daily data"
+                :content="metricsDefinitions?.volatility || 'Annualized standard deviation of returns, calculated from daily data'"
                 placement="top"
                 effect="light"
               >
@@ -250,66 +256,11 @@
       </template>
     </el-dialog>
 
-    <!-- Stock Info Dialog -->
-    <el-dialog
-      v-model="showStockInfoModal"
-      :title="selectedStock?.ticker"
-      width="50%"
-      class="stock-info-dialog"
-    >
-      <div v-if="selectedStock" class="stock-info">
-        <div class="info-section">
-          <h4>Basic Information</h4>
-          <div class="info-grid">
-            <div class="info-item">
-              <span class="label">Company Name</span>
-              <span class="value">{{ selectedStock.name || selectedStock.shortName || selectedStock.longName || 'N/A' }}</span>
-            </div>
-            <div class="info-item">
-              <span class="label">Sector</span>
-              <span class="value">{{ selectedStock.sector || 'N/A' }}</span>
-            </div>
-            <div class="info-item">
-              <span class="label">Market Cap</span>
-              <span class="value">{{ formatMarketCap(selectedStock.marketCap) }}</span>
-            </div>
-            <div class="info-item">
-              <span class="label">P/E Ratio</span>
-              <span class="value">{{ selectedStock.forwardPE?.toFixed(2) || 'N/A' }}</span>
-            </div>
-          </div>
-        </div>
-        
-        <div class="info-section">
-          <h4>Financial Metrics</h4>
-          <div class="info-grid">
-            <div class="info-item">
-              <span class="label">52 Week High</span>
-              <span class="value">{{ selectedStock.fiftyTwoWeekHigh?.toFixed(2) || 'N/A' }}</span>
-            </div>
-            <div class="info-item">
-              <span class="label">52 Week Low</span>
-              <span class="value">{{ selectedStock.fiftyTwoWeekLow?.toFixed(2) || 'N/A' }}</span>
-            </div>
-            <div class="info-item">
-              <span class="label">Dividend Yield</span>
-              <span class="value">{{ (selectedStock.dividendYield * 100)?.toFixed(2) || 'N/A' }}%</span>
-            </div>
-            <div class="info-item">
-              <span class="label">Beta</span>
-              <span class="value">{{ selectedStock.beta?.toFixed(2) || 'N/A' }}</span>
-            </div>
-          </div>
-        </div>
-
-        <div class="info-section">
-          <h4>Company Overview</h4>
-          <div class="company-description">
-            <p>{{ selectedStock.longBusinessSummary || 'No company description available.' }}</p>
-          </div>
-        </div>
-      </div>
-    </el-dialog>
+    <!-- Stock Detail Modal -->
+    <StockDetailModal
+      v-model="showStockDetailModal"
+      :ticker="selectedTicker"
+    />
   </div>
 </template>
 
@@ -319,6 +270,7 @@ import { ElMessage, ElMessageBox } from 'element-plus';
 import { InfoFilled } from '@element-plus/icons-vue';
 import { portfolioService, marketService } from '../services/api';
 import * as echarts from 'echarts';
+import StockDetailModal from '../components/StockDetailModal.vue';
 
 const portfolios = ref([]);
 const loading = ref(false);
@@ -384,6 +336,16 @@ const loadAvailableStocks = async () => {
   } catch (error) {
     console.error('Failed to load available stocks:', error);
     ElMessage.error('Failed to load available stocks');
+  }
+};
+
+const loadMetricsDefinitions = async () => {
+  try {
+    const response = await portfolioService.getMetrics();
+    metricsDefinitions.value = response.data;
+  } catch (error) {
+    console.error('Failed to load metrics definitions:', error);
+    // 不显示错误消息，因为这是可选的
   }
 };
 
@@ -534,6 +496,12 @@ const handleDateChange = () => {
   }
 };
 
+const handleChartTypeChange = () => {
+  if (selectedPortfolio.value) {
+    initChart();
+  }
+};
+
 const showPortfolioDetails = async (portfolio) => {
   try {
     console.log('Showing portfolio details for:', portfolio);
@@ -579,8 +547,24 @@ const showPortfolioDetails = async (portfolio) => {
       };
     }
 
+    // 处理performance_cum数据
+    if (response.data.performance_cum) {
+      updatedPortfolio.performance_cum = response.data.performance_cum;
+    }
+
     selectedPortfolio.value = updatedPortfolio;
     showDetailsModal.value = true;
+    
+    // 自动填充日期字段 - 设置默认值
+    if (response.data.dates && response.data.dates.length > 0) {
+      const dates = response.data.dates.map(date => new Date(date));
+      const minDate = new Date(Math.min(...dates));
+      const maxDate = new Date(Math.max(...dates));
+      
+      // 设置默认的开始时间为创建时间，结束时间为当前时间
+      selectedStartDate.value = new Date(portfolio.start_date);
+      selectedEndDate.value = new Date();
+    }
     
     await nextTick();
     initChart();
@@ -597,6 +581,10 @@ const initChart = () => {
   }
 
   console.log('Initializing chart with data:', selectedPortfolio.value);
+  console.log('Chart type:', chartType.value);
+  console.log('Performance data:', selectedPortfolio.value.performance);
+  console.log('Performance cum data:', selectedPortfolio.value.performance_cum);
+  console.log('Dates data:', selectedPortfolio.value.dates);
 
   // destroy old chart
   if (chart) {
@@ -623,11 +611,83 @@ const initChart = () => {
                      }).replace(/\//g, '-')
                  );
 
-    const performance = selectedPortfolio.value.performance;
+    console.log('Processed dates:', dates);
+
+    // 根据图表类型选择数据
+    let chartData, chartTitle, yAxisFormatter;
+    if (chartType.value === 'cumulative' && selectedPortfolio.value.performance_cum && Array.isArray(selectedPortfolio.value.performance_cum)) {
+      chartData = selectedPortfolio.value.performance_cum;
+      chartTitle = 'Cumulative Portfolio Performance';
+      yAxisFormatter = '{value}%';
+      console.log('Using cumulative data, length:', chartData.length);
+    } else {
+      chartData = selectedPortfolio.value.performance;
+      chartTitle = 'Daily Portfolio Performance';
+      yAxisFormatter = '{value}%';
+      console.log('Using daily data, length:', chartData.length);
+      if (chartType.value === 'cumulative') {
+        console.log('Cumulative data not available or invalid');
+      }
+    }
+
+    // 确保数据长度匹配
+    if (chartData.length !== dates.length) {
+      console.warn('Data length mismatch, using performance data length');
+      const minLength = Math.min(chartData.length, dates.length);
+      chartData = chartData.slice(0, minLength);
+      dates = dates.slice(0, minLength);
+    }
+
+    // 优化日期格式
+    const formattedDates = dates.map(date => {
+      try {
+        let dateObj;
+        
+        // 处理quarterly格式 (Q1-2024, Q2-2024, etc.)
+        if (typeof date === 'string' && date.match(/^Q[1-4]-\d{4}$/)) {
+          const [quarter, year] = date.split('-');
+          const quarterNum = parseInt(quarter.substring(1));
+          const yearNum = parseInt(year);
+          const month = (quarterNum - 1) * 3; // Q1=0, Q2=3, Q3=6, Q4=9
+          dateObj = new Date(yearNum, month, 1);
+        } else {
+          dateObj = new Date(date);
+        }
+        
+        if (isNaN(dateObj.getTime())) {
+          console.warn('Invalid date:', date);
+          return 'Invalid Date';
+        }
+        
+        if (selectedTimeFrame.value === 'daily') {
+          return dateObj.toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit'
+          }).replace(/\//g, '-');
+        } else if (selectedTimeFrame.value === 'quarterly') {
+          // 对于quarterly，显示为 Q1-2024 格式
+          const quarter = Math.floor(dateObj.getMonth() / 3) + 1;
+          const year = dateObj.getFullYear();
+          return `Q${quarter}-${year}`;
+        } else {
+          return dateObj.toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'short',
+            day: '2-digit'
+          });
+        }
+      } catch (error) {
+        console.error('Error formatting date:', date, error);
+        return 'Invalid Date';
+      }
+    });
+
+    console.log('Formatted dates:', formattedDates);
 
     const option = {
       title: {
-        text: 'Portfolio Performance',
+        text: chartTitle,
         left: 'center'
       },
       tooltip: {
@@ -635,12 +695,12 @@ const initChart = () => {
         formatter: function(params) {
           const date = params[0].axisValue;
           const value = params[0].data;
-          return `${date}<br/>Return: ${value.toFixed(2)}%`;
+          return `${date}<br/>${chartType.value === 'cumulative' ? 'Cumulative Return' : 'Daily Return'}: ${value.toFixed(2)}%`;
         }
       },
       xAxis: {
         type: 'category',
-        data: dates,
+        data: formattedDates,
         axisLabel: {
           rotate: 45,
           formatter: function(value) {
@@ -651,13 +711,13 @@ const initChart = () => {
       yAxis: {
         type: 'value',
         axisLabel: {
-          formatter: '{value}%'
+          formatter: yAxisFormatter
         }
       },
       series: [{
-        name: 'Portfolio Return',
+        name: chartType.value === 'cumulative' ? 'Cumulative Return' : 'Daily Return',
         type: 'line',
-        data: performance,
+        data: chartData,
         smooth: true,
         lineStyle: {
           width: 3
@@ -716,35 +776,28 @@ onUnmounted(() => {
 const selectedTimeFrame = ref('daily');
 const selectedStartDate = ref(null);
 const selectedEndDate = ref(null);
+const chartType = ref('cumulative');
+const metricsDefinitions = ref(null);
 
 // Add new reactive variables
-const showStockInfoModal = ref(false);
-const selectedStock = ref(null);
+const showStockDetailModal = ref(false);
+const selectedTicker = ref(null);
 
 // Add new methods
 const showStockInfo = async (ticker) => {
   try {
-    const response = await portfolioService.getTickerInfo(ticker);
-    console.log('Stock info response:', response.data);
-    selectedStock.value = response.data;
-    showStockInfoModal.value = true;
+    selectedTicker.value = ticker;
+    showStockDetailModal.value = true;
   } catch (error) {
-    console.error('Error loading stock info:', error);
-    ElMessage.error('Failed to load stock information: ' + (error.response?.data?.detail || error.message));
+    console.error('Error opening stock detail:', error);
+    ElMessage.error('Failed to open stock detail');
   }
-};
-
-const formatMarketCap = (value) => {
-  if (!value) return 'N/A';
-  if (value >= 1e12) return `$${(value / 1e12).toFixed(2)}T`;
-  if (value >= 1e9) return `$${(value / 1e9).toFixed(2)}B`;
-  if (value >= 1e6) return `$${(value / 1e6).toFixed(2)}M`;
-  return `$${value.toFixed(2)}`;
 };
 
 onMounted(() => {
   loadPortfolios();
   loadAvailableStocks();
+  loadMetricsDefinitions();
 });
 </script>
 
@@ -1035,12 +1088,23 @@ body, .portfolio-container {
 .time-frame-selection {
   display: flex;
   gap: 16px;
-  margin-bottom: 24px;
   align-items: center;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
 }
 
 .time-frame-select {
-  width: 150px;
+  min-width: 120px;
+}
+
+.chart-type-toggle {
+  margin-left: auto;
+}
+
+.chart-type-toggle .el-radio-button__inner {
+  border-radius: 8px;
+  padding: 8px 16px;
+  font-size: 14px;
 }
 
 .summary-item {

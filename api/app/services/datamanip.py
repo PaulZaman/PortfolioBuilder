@@ -151,6 +151,6 @@ def adjust_portfolio(portfolio, start_date=None, end_date=None, time_frame=None)
 	portfolio["metrics"] = metrics
 	portfolio["performance"] = performances["ptf"].tolist()
 	portfolio["dates"] = performances["date"].tolist()
-	portfolio['performance_cum'] = performances["ptf_cum"]
+	portfolio['performance_cum'] = performances["ptf_cum"].tolist()
 
 	return portfolio

@@ -41,7 +41,7 @@
         <el-row :gutter="20">
           <el-col :span="24">
             <el-card class="enhanced-card fade-in">
-              <el-table :data="filteredWatchlist" style="width: 100%" v-loading="loading" class="enhanced-table" @row-click="rowClick">
+              <el-table :data="filteredWatchlist" style="width: 100%" v-loading="loading" class="enhanced-table" @row-click="handleRowClick">
                 <el-table-column prop="ticker" label="Ticker" min-width="100" />
                 <el-table-column prop="name" label="Company Name" min-width="200" show-overflow-tooltip />
                 <el-table-column prop="price" label="Current Price" min-width="120">
@@ -103,20 +103,23 @@
         </template>
       </el-input>
 
-      <el-scrollbar height="400px">
+      <el-scrollbar height="500px">
         <div class="stock-list">
           <el-card
             v-for="stock in filteredAvailableStocks"
             :key="stock.ticker"
-            class="mb-2 cursor-pointer hover:bg-gray-50 enhanced-card stock-card fade-in"
-            @click="addToWatchlist(stock.ticker)"
+            class="stock-card-item cursor-pointer hover:bg-gray-50 enhanced-card stock-card fade-in"
+            @click="handleStockCardClick(stock)"
           >
-            <div class="flex justify-between items-center">
-              <div>
-                <div class="font-medium">{{ stock.ticker }}</div>
-                <div class="text-sm text-gray-500">{{ stock.name }}</div>
+            <div class="stock-card-content">
+              <div class="stock-info">
+                <div class="stock-ticker">{{ stock.ticker }}</div>
+                <div class="stock-name">{{ stock.name }}</div>
               </div>
-              <el-button class="round-btn gradient-btn" type="primary" size="small">Add</el-button>
+              <div class="stock-actions">
+                <el-button class="round-btn gradient-btn compact-btn" type="primary" size="small" @click.stop="addToWatchlist(stock.ticker)">Add</el-button>
+                <el-button class="round-btn info-btn compact-btn" type="info" size="small" @click.stop="showStockDetail(stock.ticker)">Info</el-button>
+              </div>
             </div>
           </el-card>
         </div>
@@ -128,6 +131,12 @@
         </span>
       </template>
     </el-dialog>
+
+    <!-- Stock Detail Modal -->
+    <StockDetailModal
+      v-model="showStockDetailModal"
+      :ticker="selectedTicker"
+    />
   </div>
 </template>
 
@@ -136,11 +145,13 @@ import { ref, computed, onMounted, watch, nextTick } from 'vue';
 import { marketService } from '../services/api';
 import { Search } from '@element-plus/icons-vue';
 import { ElMessage } from 'element-plus';
+import StockDetailModal from '../components/StockDetailModal.vue';
 
 export default {
   name: 'MarketPage',
   components: {
-    Search
+    Search,
+    StockDetailModal
   },
   setup() {
     const watchlist = ref([]);
@@ -150,8 +161,10 @@ export default {
     const showAddStockModal = ref(false);
     const loading = ref(false);
     const selectedRow = ref(null);
+    const showStockDetailModal = ref(false);
+    const selectedTicker = ref('');
 
-    // 新增：记录每只股票的上一次价格和闪烁状态
+    // new: record the last price and flash status of each stock
     const priceFlashMap = ref({});
 
     // 监听 watchlist 变化，判断价格变动
@@ -166,10 +179,10 @@ export default {
       newList.forEach(stock => {
         const oldStock = oldList.find(s => s.ticker === stock.ticker);
         if (oldStock && stock.price !== oldStock.price) {
-          // 价格变动，设置闪烁class
+          // price changed, set flash class
           const flashClass = stock.price > oldStock.price ? 'flash-green' : 'flash-red';
           priceFlashMap.value[stock.ticker] = { last: stock.price, flash: flashClass };
-          // 动画结束后移除class
+          // remove class after animation
           nextTick(() => {
             setTimeout(() => {
               if (priceFlashMap.value[stock.ticker]) {
@@ -178,7 +191,7 @@ export default {
             }, 700);
           });
         } else if (!oldStock) {
-          // 新增股票
+          // new stock
           priceFlashMap.value[stock.ticker] = { last: stock.price, flash: '' };
         }
       });
@@ -218,7 +231,12 @@ export default {
         ElMessage.success(`${ticker} added to watchlist`);
       } catch (error) {
         console.error('Error adding stock to watchlist:', error);
-        ElMessage.error('Failed to add stock to watchlist');
+        // check if the error is "already in watchlist"
+        if (error.response?.data?.detail && error.response.data.detail.includes('already in the watchlist')) {
+          ElMessage.warning(`${ticker} is already in watchlist`);
+        } else {
+          ElMessage.error('Failed to add stock to watchlist');
+        }
       }
     };
 
@@ -262,18 +280,30 @@ export default {
       );
     });
 
+    // Handle row click in watchlist table
+    const handleRowClick = (row) => {
+      selectedRow.value = row.ticker;
+      showStockDetail(row.ticker);
+    };
+
+    // Handle stock card click in add stock modal
+    const handleStockCardClick = (stock) => {
+      // This will be handled by the buttons inside the card
+    };
+
+    // Show stock detail modal
+    const showStockDetail = (ticker) => {
+      selectedTicker.value = ticker;
+      showStockDetailModal.value = true;
+    };
+
     // Fetch data on component mount
     onMounted(() => {
       fetchWatchlist();
       fetchAvailableStocks();
     });
 
-    // 行点击高亮
-    const rowClick = (row) => {
-      selectedRow.value = row.ticker;
-    };
-
-    // 价格箭头
+    // price arrow
     const priceArrow = (row, type) => {
       const flash = priceFlashMap.value[row.ticker]?.flash;
       if (type === 'up') return flash === 'flash-green';
@@ -295,9 +325,13 @@ export default {
       formatPerformance,
       getPerformanceClass,
       priceFlashMap,
-      rowClick,
+      handleRowClick,
       selectedRow,
-      priceArrow
+      priceArrow,
+      showStockDetailModal,
+      selectedTicker,
+      showStockDetail,
+      handleStockCardClick
     };
   }
 };
@@ -414,6 +448,19 @@ export default {
   color: #fff !important;
 }
 
+.info-btn {
+  border-radius: 16px !important;
+  font-weight: 500;
+  background: #e6f7ff;
+  color: #409eff;
+  border: none;
+  transition: background 0.2s, color 0.2s;
+}
+.info-btn:hover {
+  background: #b3e5fc !important;
+  color: #fff !important;
+}
+
 .round-btn {
   border-radius: 18px !important;
   font-weight: 500;
@@ -435,10 +482,52 @@ export default {
   box-shadow: 0 2px 8px rgba(64, 158, 255, 0.06);
   border: none;
   transition: box-shadow 0.2s, background 0.2s;
+  margin-bottom: 6px; /* further reduce vertical spacing */
+  padding: 8px 16px; /* reduce padding */
 }
 .stock-card:hover {
   box-shadow: 0 4px 16px rgba(64, 158, 255, 0.13);
   background: #f0f7ff !important;
+}
+
+.stock-card-item {
+  margin-bottom: 6px; /* further reduce vertical spacing */
+}
+
+.stock-card-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 4px 0; /* reduce padding */
+}
+
+.stock-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+}
+
+.stock-ticker {
+  font-weight: 600;
+  font-size: 15px;
+  color: #333;
+  min-width: 50px;
+}
+
+.stock-name {
+  font-size: 13px;
+  color: #666;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.stock-actions {
+  display: flex;
+  gap: 6px; /* reduce button spacing */
+  flex-shrink: 0;
 }
 
 .enhanced-dialog .el-dialog {
@@ -555,5 +644,12 @@ body, .market-container {
 .gradient-btn:hover {
   background: linear-gradient(90deg, #409eff 0%, #36cfc9 100%) !important;
   box-shadow: 0 4px 16px #409eff33;
+}
+
+.compact-btn {
+  padding: 6px 16px !important;
+  font-size: 13px !important;
+  height: 28px !important;
+  line-height: 1 !important;
 }
 </style> 

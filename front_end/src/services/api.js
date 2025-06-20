@@ -68,7 +68,7 @@ export const authService = {
   },
 
   async updateUserInfo(userData) {
-    const response = await api.post('/api/user/update', userData);
+    const response = await api.put('/api/user-update', userData);
     return response.data;
   },
 
@@ -97,6 +97,16 @@ export const marketService = {
   async removeFromWatchlist(ticker) {
     const response = await api.post(`/api/user/watchlist/remove?ticker=${ticker}`);
     return response.data;
+  },
+
+  async getTickerInfo(ticker) {
+    const response = await api.get(`/api/tickers/info/${ticker}`);
+    return response.data;
+  },
+
+  async getTickerHistory(ticker) {
+    const response = await api.get(`/api/tickers/hist/${ticker}`);
+    return response.data;
   }
 };
 
@@ -117,8 +127,8 @@ export const portfolioService = {
     return await api.delete(`/api/portfolios/delete/${id}`);
   },
 
-  async getTickerInfo(ticker) {
-    return await api.get(`/api/portfolios/get/ticker-info/${ticker}`);
+  async getMetrics() {
+    return await api.get('/api/portfolios/metrics');
   }
 };
 

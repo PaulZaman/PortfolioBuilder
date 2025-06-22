@@ -167,10 +167,10 @@ export default {
     // new: record the last price and flash status of each stock
     const priceFlashMap = ref({});
 
-    // 监听 watchlist 变化，判断价格变动
+    // listen watchlist change, check price change
     watch(watchlist, (newList, oldList) => {
       if (!oldList || oldList.length === 0) {
-        // 初始化时记录价格
+        // init price
         newList.forEach(stock => {
           priceFlashMap.value[stock.ticker] = { last: stock.price, flash: '' };
         });
@@ -179,7 +179,7 @@ export default {
       newList.forEach(stock => {
         const oldStock = oldList.find(s => s.ticker === stock.ticker);
         if (oldStock && stock.price !== oldStock.price) {
-          // price changed, set flash class
+          // price changed, set flash class, flash-green for up, flash-red for down
           const flashClass = stock.price > oldStock.price ? 'flash-green' : 'flash-red';
           priceFlashMap.value[stock.ticker] = { last: stock.price, flash: flashClass };
           // remove class after animation
@@ -191,7 +191,7 @@ export default {
             }, 700);
           });
         } else if (!oldStock) {
-          // new stock
+          // new stock, init price
           priceFlashMap.value[stock.ticker] = { last: stock.price, flash: '' };
         }
       });
@@ -232,6 +232,7 @@ export default {
       } catch (error) {
         console.error('Error adding stock to watchlist:', error);
         // check if the error is "already in watchlist"
+        // if so, show warning
         if (error.response?.data?.detail && error.response.data.detail.includes('already in the watchlist')) {
           ElMessage.warning(`${ticker} is already in watchlist`);
         } else {

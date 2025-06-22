@@ -43,9 +43,8 @@ async def get_ticker_history(
 		end_date = datetime.now().date()
 		start_date = end_date - timedelta(days=30)
 
-		# Fetch historical data using yfinance directly
-		stock = yf.Ticker(ticker)
-		hist = stock.history(start=start_date, end=end_date)
+		# Fetch historical data using yfinance
+		hist = get_stock_data([ticker], start_date=start_date.isoformat(), end_date=end_date.isoformat(), pct_change=False)
 
 		# Check if data is empty
 		if hist.empty:
@@ -54,8 +53,8 @@ async def get_ticker_history(
 		# Return closing prices
 		return {
 			"ticker": ticker,
-			"dates": hist.index.strftime('%Y-%m-%d').tolist(),
-			"prices": hist['Close'].tolist()
+			"dates": hist['Date'].tolist(),
+			"prices": hist[ticker].tolist()
 		}
 
 	except Exception as e:

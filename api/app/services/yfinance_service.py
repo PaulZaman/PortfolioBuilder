@@ -35,11 +35,11 @@ def get_info(ticker):
         print(f"Error fetching data for {ticker}: {e}")
         return None
 
-def get_daily_performance(tickers):
+def get_daily_performance(tickers, return_current_price=True):
     try:
-        data = yf.download(tickers, period="2d", group_by='ticker', auto_adjust=False)
+        data = yf.download(tickers, period="4d", group_by='ticker', auto_adjust=False)
         performance = {}
-
+        current_prices = {}
         for ticker in tickers:
             try:
                 close_prices = data[ticker]["Close"]
@@ -51,19 +51,27 @@ def get_daily_performance(tickers):
                 last_close = close_prices.iloc[-1]
                 change = ((last_close - prev_close) / prev_close) * 100
                 performance[ticker] = round(change, 2)
+                current_prices[ticker] = close_prices.iloc[-1]
             except Exception:
                 performance[ticker] = None
+                current_prices[ticker] = None
 
             # Check if the performance is not nan, if so, replace it with None
             if performance[ticker] is not None and (performance[ticker] != performance[ticker]):
                 performance[ticker] = None
 
-        return performance
 
-    except Exception:
+        if not return_current_price:
+            return performance
+        else:
+            return performance, current_prices
+
+    except Exception as e:
+        print("Error : ", e)
+        print('error')
         return {ticker: None for ticker in tickers}
     
-def get_stock_data(tickers, start_date=None, end_date=None):
+def get_stock_data(tickers, start_date=None, end_date=None, pct_change=True):
     try:
 
         # If start date is not none, remove 1 day from it
@@ -88,9 +96,10 @@ def get_stock_data(tickers, start_date=None, end_date=None):
         
         
         # convert to daily performance
-        for ticker in data.columns[1:]:
-            data[ticker] = data[ticker].pct_change()
-            data[ticker] = data[ticker].round(8)
+        if pct_change:
+            for ticker in data.columns[1:]:
+                data[ticker] = data[ticker].pct_change()
+                data[ticker] = data[ticker].round(8)
 
         # Dropna
         data = data.dropna()

@@ -148,11 +148,7 @@ async def get_user_watchlist(user=Depends(verify_token)):
         result = {"user_id": uid, "watchlist": stock_data}
 
         # Get daily performance and current price for each stock in the watchlist
-        performance = get_daily_performance([stock["ticker"] for stock in result["watchlist"]])
-        
-        # Get current prices using yfinance
-        tickers = [stock["ticker"] for stock in result["watchlist"]]
-        current_prices = yf.download(tickers, period="1d", group_by='ticker', auto_adjust=False)
+        performance, current_prices = get_daily_performance([stock["ticker"] for stock in result["watchlist"]], return_current_price=True)
 
         # Add daily performance and current price to each stock in the watchlist
         for stock in result["watchlist"]:
@@ -161,12 +157,11 @@ async def get_user_watchlist(user=Depends(verify_token)):
                 stock["daily_performance"] = performance[ticker]
             else:
                 stock["daily_performance"] = None
-                
-            # Add current price
-            try:
-                stock["price"] = round(current_prices[ticker]["Close"].iloc[-1], 2)
-            except:
-                stock["price"] = None
+            if ticker in current_prices:
+                stock['price'] = current_prices[ticker]
+            else:
+                stock['price'] = None
+
 
         return result
 

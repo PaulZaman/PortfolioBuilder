@@ -186,10 +186,17 @@ export default {
         },
         yAxis: {
           type: 'value',
+          scale: true,
           axisLabel: {
             formatter: function(value) {
               return '$' + value.toFixed(2);
             }
+          },
+          min: function (value) {
+            return value.min - (value.max - value.min) * 0.1;
+          },
+          max: function (value) {
+            return value.max + (value.max - value.min) * 0.1;
           }
         },
         series: [

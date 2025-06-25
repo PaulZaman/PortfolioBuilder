@@ -100,12 +100,17 @@
         </div>
 
         <div class="portfolio-summary">
-          <div class="summary-item">
-            <span class="label">Start Date:</span>
-            <span class="value">{{ formatDate(selectedPortfolio.start_date) }}</span>
-          </div>
-          <div class="summary-item">
-            <span class="label">Total Return:</span>
+          <div class="summary-item" v-if="selectedPortfolio.metrics">
+            <div class="metric-header">
+              <span class="label">Total Return</span>
+              <el-tooltip
+                :content="metricsDefinitions?.total_cum_return || 'Total cumulative return over the full period.'"
+                placement="top"
+                effect="light"
+              >
+                <el-icon class="info-icon"><InfoFilled /></el-icon>
+              </el-tooltip>
+            </div>
             <span :class="['value', getPerformanceClass(selectedPortfolio.performance?.[selectedPortfolio.performance.length - 1])]">
               {{ formatPerformance(selectedPortfolio.performance?.[selectedPortfolio.performance.length - 1]) }}
             </span>
@@ -148,6 +153,41 @@
               </el-tooltip>
             </div>
             <span class="value">{{ (selectedPortfolio.metrics.volatility * 100)?.toFixed(2) || 'N/A' }}%</span>
+          </div>
+          <!-- More Metrics Toggle Box -->
+          <div class="summary-item" @click="showMoreMetrics = !showMoreMetrics" style="cursor: pointer;">
+            <div class="metric-header">
+              <span class="label">More Metrics</span>
+              <el-tooltip content="Click to view more metrics and their explanations." placement="top" effect="light">
+                <el-icon class="info-icon"><InfoFilled /></el-icon>
+              </el-tooltip>
+            </div>
+            <span class="value text-blue-500">
+              <span v-if="!showMoreMetrics">↓ Show</span>
+              <span v-else>↑ Hide</span>
+            </span>
+          </div>
+        </div>
+
+        <!-- More Metrics Section -->
+        <div v-if="showMoreMetrics" class="more-metrics-container mt-4">
+          <div class="metric-row" v-for="key in [
+            'mean_yearly_return',
+            'sortino_ratio',
+            'calmar_ratio',
+            'hit_ratio',
+            'mean_daily_return',
+            'best_daily_return',
+            'worst_daily_return'
+          ]" :key="key">
+            <span class="metric-label">{{ key.replace(/_/g, ' ').toUpperCase() }}</span>
+            <el-tooltip :content="metricsDefinitions[key]" placement="top" effect="light">
+              <el-icon class="info-icon"><InfoFilled /></el-icon>
+            </el-tooltip>
+            <span class="metric-value">
+              {{ (selectedPortfolio.metrics[key] * (key.includes('return') ? 100 : 1))?.toFixed(2) }}
+              <span v-if="key.includes('return')">%</span>
+            </span>
           </div>
         </div>
 
@@ -460,26 +500,16 @@ const resetForm = () => {
 };
 
 const formatDate = (date) => {
-  if (!date) {
-    console.log('No date provided');
-    return 'Not set';
-  }
+  if (!date) return 'Not set';
   try {
-    console.log('Formatting date:', date, 'Type:', typeof date);
     const dateObj = typeof date === 'string' ? new Date(date) : date;
-    if (isNaN(dateObj.getTime())) {
-      console.error('Invalid date:', date);
-      return 'Invalid date';
-    }
+    if (isNaN(dateObj.getTime())) return 'Invalid date';
     return dateObj.toLocaleDateString('en-US', {
       year: 'numeric',
       month: '2-digit',
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit'
+      day: '2-digit'
     }).replace(/\//g, '-');
   } catch (error) {
-    console.error('Date formatting error:', error, 'Date value:', date);
     return 'Invalid date';
   }
 };
@@ -547,7 +577,7 @@ const showPortfolioDetails = async (portfolio) => {
       };
     }
 
-    // 处理performance_cum数据
+    // handle performance_cum data
     if (response.data.performance_cum) {
       updatedPortfolio.performance_cum = response.data.performance_cum;
     }
@@ -555,13 +585,13 @@ const showPortfolioDetails = async (portfolio) => {
     selectedPortfolio.value = updatedPortfolio;
     showDetailsModal.value = true;
     
-    // 自动填充日期字段 - 设置默认值
+    // auto fill date field - set default value
     if (response.data.dates && response.data.dates.length > 0) {
       const dates = response.data.dates.map(date => new Date(date));
       const minDate = new Date(Math.min(...dates));
       const maxDate = new Date(Math.max(...dates));
       
-      // 设置默认的开始时间为创建时间，结束时间为当前时间
+      // set default start time to creation time, end time to current time
       selectedStartDate.value = new Date(portfolio.start_date);
       selectedEndDate.value = new Date();
     }
@@ -613,7 +643,7 @@ const initChart = () => {
 
     console.log('Processed dates:', dates);
 
-    // 根据图表类型选择数据
+    // according to chart type, select data
     let chartData, chartTitle, yAxisFormatter;
     if (chartType.value === 'cumulative' && selectedPortfolio.value.performance_cum && Array.isArray(selectedPortfolio.value.performance_cum)) {
       chartData = selectedPortfolio.value.performance_cum;
@@ -630,7 +660,7 @@ const initChart = () => {
       }
     }
 
-    // 确保数据长度匹配
+    // ensure data length matches
     if (chartData.length !== dates.length) {
       console.warn('Data length mismatch, using performance data length');
       const minLength = Math.min(chartData.length, dates.length);
@@ -638,12 +668,12 @@ const initChart = () => {
       dates = dates.slice(0, minLength);
     }
 
-    // 优化日期格式
+    // optimize date format
     const formattedDates = dates.map(date => {
       try {
         let dateObj;
         
-        // 处理quarterly格式 (Q1-2024, Q2-2024, etc.)
+        // handle quarterly format (Q1-2024, Q2-2024, etc.)
         if (typeof date === 'string' && date.match(/^Q[1-4]-\d{4}$/)) {
           const [quarter, year] = date.split('-');
           const quarterNum = parseInt(quarter.substring(1));
@@ -666,7 +696,7 @@ const initChart = () => {
             day: '2-digit'
           }).replace(/\//g, '-');
         } else if (selectedTimeFrame.value === 'quarterly') {
-          // 对于quarterly，显示为 Q1-2024 格式
+          // for quarterly, display as Q1-2024 format
           const quarter = Math.floor(dateObj.getMonth() / 3) + 1;
           const year = dateObj.getFullYear();
           return `Q${quarter}-${year}`;
@@ -782,6 +812,7 @@ const metricsDefinitions = ref(null);
 // Add new reactive variables
 const showStockDetailModal = ref(false);
 const selectedTicker = ref(null);
+const showMoreMetrics = ref(false);
 
 // Add new methods
 const showStockInfo = async (ticker) => {
@@ -1241,5 +1272,30 @@ body, .portfolio-container {
 .company-description p {
   margin: 0;
   white-space: pre-wrap;
+}
+
+.portfolio-metrics {
+  margin-top: 20px;
+  padding: 16px;
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.05);
+}
+
+.metric-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.metric-label {
+  font-size: 14px;
+  color: #666;
+}
+
+.metric-value {
+  font-size: 16px;
+  font-weight: 600;
 }
 </style>

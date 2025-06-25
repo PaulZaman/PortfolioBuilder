@@ -111,8 +111,8 @@
                 <el-icon class="info-icon"><InfoFilled /></el-icon>
               </el-tooltip>
             </div>
-            <span :class="['value', getPerformanceClass(selectedPortfolio.performance?.[selectedPortfolio.performance.length - 1])]">
-              {{ formatPerformance(selectedPortfolio.performance?.[selectedPortfolio.performance.length - 1]) }}
+            <span :class="['value', getPerformanceClass(selectedPortfolio.performance_cum?.[selectedPortfolio.performance_cum.length - 1])]">
+              {{ formatPerformance(selectedPortfolio.performance_cum?.[selectedPortfolio.performance_cum.length - 1]) }}
             </span>
           </div>
           <div class="summary-item" v-if="selectedPortfolio.metrics">
@@ -126,7 +126,7 @@
                 <el-icon class="info-icon"><InfoFilled /></el-icon>
               </el-tooltip>
             </div>
-            <span class="value">{{ selectedPortfolio.metrics.sharpe_ratio?.toFixed(2) || 'N/A' }}</span>
+            <span class="value">{{ formatMetricValue(selectedPortfolio.metrics.sharpe_ratio, 'sharpe_ratio') }}</span>
           </div>
           <div class="summary-item" v-if="selectedPortfolio.metrics">
             <div class="metric-header">
@@ -139,7 +139,7 @@
                 <el-icon class="info-icon"><InfoFilled /></el-icon>
               </el-tooltip>
             </div>
-            <span class="value text-red-500">{{ (selectedPortfolio.metrics.max_drawdown * 100)?.toFixed(2) || 'N/A' }}%</span>
+            <span class="value text-red-500">{{ formatMetricValue(selectedPortfolio.metrics.max_drawdown, 'max_drawdown') }}</span>
           </div>
           <div class="summary-item" v-if="selectedPortfolio.metrics">
             <div class="metric-header">
@@ -152,7 +152,7 @@
                 <el-icon class="info-icon"><InfoFilled /></el-icon>
               </el-tooltip>
             </div>
-            <span class="value">{{ (selectedPortfolio.metrics.volatility * 100)?.toFixed(2) || 'N/A' }}%</span>
+            <span class="value">{{ formatMetricValue(selectedPortfolio.metrics.volatility, 'volatility') }}</span>
           </div>
           <!-- More Metrics Toggle Box -->
           <div class="summary-item" @click="showMoreMetrics = !showMoreMetrics" style="cursor: pointer;">
@@ -185,8 +185,7 @@
               <el-icon class="info-icon"><InfoFilled /></el-icon>
             </el-tooltip>
             <span class="metric-value">
-              {{ (selectedPortfolio.metrics[key] * (key.includes('return') ? 100 : 1))?.toFixed(2) }}
-              <span v-if="key.includes('return')">%</span>
+              {{ formatMetricValue(selectedPortfolio.metrics[key], key) }}
             </span>
           </div>
         </div>
@@ -564,16 +563,33 @@ const showPortfolioDetails = async (portfolio) => {
 
     // handle metrics data
     if (response.data.metrics) {
+      console.log('Raw metrics data from API:', response.data.metrics);
       updatedPortfolio.metrics = {
         sharpe_ratio: parseFloat(response.data.metrics.sharpe_ratio) || null,
         max_drawdown: parseFloat(response.data.metrics.max_drawdown) || null,
-        volatility: parseFloat(response.data.metrics.volatility) || null
+        volatility: parseFloat(response.data.metrics.volatility) || null,
+        mean_yearly_return: parseFloat(response.data.metrics.mean_yearly_return) || null,
+        sortino_ratio: parseFloat(response.data.metrics.sortino_ratio) || null,
+        calmar_ratio: parseFloat(response.data.metrics.calmar_ratio) || null,
+        hit_ratio: parseFloat(response.data.metrics.hit_ratio) || null,
+        mean_daily_return: parseFloat(response.data.metrics.mean_daily_return) || null,
+        best_daily_return: parseFloat(response.data.metrics.best_daily_return) || null,
+        worst_daily_return: parseFloat(response.data.metrics.worst_daily_return) || null
       };
+      console.log('Processed metrics data:', updatedPortfolio.metrics);
     } else {
+      console.log('No metrics data in response');
       updatedPortfolio.metrics = {
         sharpe_ratio: null,
         max_drawdown: null,
-        volatility: null
+        volatility: null,
+        mean_yearly_return: null,
+        sortino_ratio: null,
+        calmar_ratio: null,
+        hit_ratio: null,
+        mean_daily_return: null,
+        best_daily_return: null,
+        worst_daily_return: null
       };
     }
 
@@ -646,12 +662,14 @@ const initChart = () => {
     // according to chart type, select data
     let chartData, chartTitle, yAxisFormatter;
     if (chartType.value === 'cumulative' && selectedPortfolio.value.performance_cum && Array.isArray(selectedPortfolio.value.performance_cum)) {
-      chartData = selectedPortfolio.value.performance_cum;
+      // Convert decimal to percentage for chart display
+      chartData = selectedPortfolio.value.performance_cum.map(value => value * 100);
       chartTitle = 'Cumulative Portfolio Performance';
       yAxisFormatter = '{value}%';
       console.log('Using cumulative data, length:', chartData.length);
     } else {
-      chartData = selectedPortfolio.value.performance;
+      // Convert decimal to percentage for chart display
+      chartData = selectedPortfolio.value.performance.map(value => value * 100);
       chartTitle = 'Daily Portfolio Performance';
       yAxisFormatter = '{value}%';
       console.log('Using daily data, length:', chartData.length);
@@ -822,6 +840,24 @@ const showStockInfo = async (ticker) => {
   } catch (error) {
     console.error('Error opening stock detail:', error);
     ElMessage.error('Failed to open stock detail');
+  }
+};
+
+const formatMetricValue = (value, key) => {
+  if (value === null || value === undefined || isNaN(value)) return 'N/A';
+  
+  const numValue = parseFloat(value);
+  if (isNaN(numValue)) return 'N/A';
+  
+  if (key.includes('return')) {
+    // convert return metrics to percentage
+    return (numValue * 100).toFixed(2) + '%';
+  } else if (key === 'max_drawdown' || key === 'volatility') {
+    // convert max drawdown and volatility to percentage
+    return (numValue * 100).toFixed(2) + '%';
+  } else {
+    // ratio metrics keep original value
+    return numValue.toFixed(2);
   }
 };
 

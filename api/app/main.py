@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.routes import user
 from app.routes import portfolio
 from app.routes import ticker
+from app.routes import questionnaire
 
 
 app = FastAPI()
@@ -20,6 +21,7 @@ app.add_middleware(
 app.include_router(user.router)
 app.include_router(portfolio.router)
 app.include_router(ticker.router)
+app.include_router(questionnaire.router)
 
 @app.get("/")
 def read_root():

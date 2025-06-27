@@ -89,6 +89,4 @@ def optimize_portfolio(
 
     return {
         "weights": weights_dict,
-        "score": float(round(score, 6)),
-        "cum_returns": cum_pct,
     }

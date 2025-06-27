@@ -47,7 +47,6 @@ async def optimize_new_portfolio(
             "tickers": tickers,
             "optimized_weights": result["weights"],
             "metric": metric,
-            "result": result,
         }
 
     except Exception as e:
@@ -97,7 +96,6 @@ async def optimize_existing_portfolio(
             "tickers": tickers,
             "optimized_weights": result["weights"],
             "metric": metric,
-            "result": result,
         }
 
     except Exception as e:

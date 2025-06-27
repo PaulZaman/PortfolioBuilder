@@ -129,6 +129,10 @@ export const portfolioService = {
 
   async getMetrics() {
     return await api.get('/api/portfolios/metrics');
+  },
+
+  async optimizePortfolio(ptfid, params) {
+    return await api.post(`/api/portfolios/optimize/${ptfid}`, params);
   }
 };
 

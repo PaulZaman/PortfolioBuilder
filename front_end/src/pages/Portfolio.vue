@@ -91,7 +91,13 @@
             placeholder="End Date"
             @change="handleDateChange"
           />
-
+          <el-button 
+          class="gradient-btn" 
+          type="primary" 
+          @click="showOptimizeDialog(selectedPortfolio)"
+        >
+          Optimize Portfolio
+        </el-button>
           <!-- Chart Type Toggle -->
           <el-radio-group v-model="chartType" @change="handleChartTypeChange" class="chart-type-toggle">
             <el-radio-button label="cumulative">Cumulative Return</el-radio-button>
@@ -300,6 +306,70 @@
       v-model="showStockDetailModal"
       :ticker="selectedTicker"
     />
+
+    <!-- Optimize Portfolio Modal -->
+    <el-dialog
+      v-model="showOptimizeModal"
+      title="Optimize Portfolio"
+      width="500px"
+      :close-on-click-modal="false"
+    >
+      <el-form :model="optimizeForm" label-width="100px">
+        <el-form-item label="Optimization Metric">
+          <el-select v-model="optimizeForm.metric" style="width: 100%">
+            <el-option v-for="item in optimizeMetricsOptions" :key="item.value" :label="item.label" :value="item.value" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="Start Date">
+          <el-date-picker v-model="optimizeForm.start_date" type="date" placeholder="Select start date" style="width: 100%" />
+        </el-form-item>
+        <el-form-item label="End Date">
+          <el-date-picker v-model="optimizeForm.end_date" type="date" placeholder="Select end date" style="width: 100%" />
+        </el-form-item>
+        <el-form-item label="Data Interval">
+          <el-select v-model="optimizeForm.interval" style="width: 100%">
+            <el-option label="Daily" value="1d" />
+            <el-option label="Weekly" value="1wk" />
+            <el-option label="Monthly" value="1mo" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="Allow Short">
+          <el-switch v-model="optimizeForm.allow_short" />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="showOptimizeModal = false">Cancel</el-button>
+        <el-button type="primary" :loading="optimizing" @click="submitOptimize">Start Optimization</el-button>
+      </template>
+      <div v-if="optimizeResult" class="mt-4">
+        <h4>Optimization Result</h4>
+        <div v-if="optimizeResult.optimized_weights && optimizeResult.tickers">
+          <el-table
+            :data="optimizeResult.tickers.map(ticker => ({
+              ticker,
+              weight: optimizeResult.optimized_weights[ticker]
+            }))"
+            style="width: 100%"
+          >
+            <el-table-column prop="ticker" label="Ticker" />
+            <el-table-column prop="weight" label="Weight">
+              <template #default="scope">
+                <span v-if="!isNaN(scope.row.weight)">
+                  {{ (scope.row.weight * 100).toFixed(2) }}%
+                </span>
+                <span v-else>
+                  No data
+                </span>
+              </template>
+            </el-table-column>
+          </el-table>
+          <div class="mt-2">Optimization Metric: {{ optimizeResult.metric }}</div>
+        </div>
+        <div v-else>
+          <span>No optimization result</span>
+        </div>
+      </div>
+    </el-dialog>
   </div>
 </template>
 
@@ -384,7 +454,7 @@ const loadMetricsDefinitions = async () => {
     metricsDefinitions.value = response.data;
   } catch (error) {
     console.error('Failed to load metrics definitions:', error);
-    // 不显示错误消息，因为这是可选的
+    // don't show error message, because it's optional
   }
 };
 
@@ -858,6 +928,69 @@ const formatMetricValue = (value, key) => {
   } else {
     // ratio metrics keep original value
     return numValue.toFixed(2);
+  }
+};
+
+// optimize related
+const showOptimizeModal = ref(false);
+const optimizing = ref(false);
+const optimizeForm = ref({
+  metric: 'sharpe',
+  start_date: '',
+  end_date: '',
+  interval: '1d',
+  allow_short: false
+});
+const optimizeResult = ref(null);
+const optimizeTargetPortfolio = ref(null);
+
+const optimizeMetricsOptions = [
+  { label: 'Sharpe Ratio', value: 'sharpe' },
+  { label: 'Sortino Ratio', value: 'sortino' },
+  { label: 'Total Return', value: 'total return' },
+  { label: 'Weekly Return', value: 'weekly return' },
+  { label: 'Daily Return', value: 'daily return' }
+];
+
+const showOptimizeDialog = (portfolio) => {
+  optimizeTargetPortfolio.value = portfolio;
+  optimizeForm.value = {
+    metric: 'sharpe',
+    start_date: portfolio.start_date || '',
+    end_date: '',
+    interval: '1d',
+    allow_short: false
+  };
+  optimizeResult.value = null;
+  showOptimizeModal.value = true;
+};
+
+const submitOptimize = async () => {
+  if (!optimizeTargetPortfolio.value) return;
+  optimizing.value = true;
+  try {
+    const startDate = optimizeForm.value.start_date instanceof Date
+      ? optimizeForm.value.start_date.toISOString().split('T')[0]
+      : optimizeForm.value.start_date;
+    const endDate = optimizeForm.value.end_date instanceof Date
+      ? optimizeForm.value.end_date.toISOString().split('T')[0]
+      : optimizeForm.value.end_date;
+
+    const params = {
+      metric: optimizeForm.value.metric,
+      start_date: startDate,
+      end_date: endDate,
+      interval: optimizeForm.value.interval,
+      allow_short: optimizeForm.value.allow_short
+    };
+    console.log('submit params', params);
+    const response = await portfolioService.optimizePortfolio(optimizeTargetPortfolio.value.ptfid, params);
+    console.log('Optimization result:', response.data);
+    optimizeResult.value = response.data;
+  } catch (error) {
+    ElMessage.error('Optimization failed: ' + (error.response?.data?.detail || error.message));
+  } finally {
+    optimizing.value = false;
   }
 };
 

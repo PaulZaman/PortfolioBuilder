@@ -315,7 +315,7 @@
       :close-on-click-modal="false"
     >
       <el-form :model="optimizeForm" label-width="100px">
-        <el-form-item label="Optimization Metric">
+        <el-form-item label="Metric">
           <el-select v-model="optimizeForm.metric" style="width: 100%">
             <el-option v-for="item in optimizeMetricsOptions" :key="item.value" :label="item.label" :value="item.value" />
           </el-select>

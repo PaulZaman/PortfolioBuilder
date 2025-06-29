@@ -47,6 +47,12 @@ const routes = [
     name: 'Profile',
     component: () => import('../pages/Profile.vue'),
     meta: { requiresAuth: true }
+  },
+  {
+    path: '/questionnaire',
+    name: 'Questionnaire',
+    component: () => import('../pages/Questionnaire.vue'),
+    meta: { requiresAuth: true }
   }
 ];
 

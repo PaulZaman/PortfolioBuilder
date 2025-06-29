@@ -112,6 +112,10 @@
           </el-col>
           
           <el-col :span="8">
+            <QuestionnairePreview />
+          </el-col>
+          
+          <el-col :span="8">
             <el-card class="feature-card">
               <template #header>
                 <div class="card-header">
@@ -134,8 +138,9 @@
 import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { ElMessage } from 'element-plus';
-import { ArrowDown, TrendCharts, Collection, User, Setting, SwitchButton, DataAnalysis } from '@element-plus/icons-vue';
+import { ArrowDown, TrendCharts, Collection, User, Setting, SwitchButton, DataAnalysis, Document } from '@element-plus/icons-vue';
 import { authService } from '../services/api';
+import QuestionnairePreview from './QuestionnairePreview.vue';
 
 const router = useRouter();
 const userInfo = ref(null);

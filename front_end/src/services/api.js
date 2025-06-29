@@ -144,4 +144,36 @@ export const portfolioService = {
   }
 };
 
+export const questionnaireService = {
+  async getQuestionnaires() {
+    const response = await api.get('/api/questionnaires/');
+    return response.data;
+  },
+
+  async submitQuestionnaire(answers) {
+    const answersArray = Object.keys(answers).map(questionId => {
+      const answer = answers[questionId];
+      return [answer];
+    });
+    
+    const response = await api.post('/api/questionnaires/', { answers: answersArray });
+    return response.data;
+  },
+
+  async getUserResponse() {
+    const response = await api.get('/api/questionnaires/response');
+    return response.data;
+  },
+
+  async getStockSuggestions() {
+    const response = await api.get('/api/questionnaires/stocks-suggestions');
+    return response.data;
+  },
+
+  async getMetricSuggestions() {
+    const response = await api.get('/api/questionnaires/metric-suggestions');
+    return response.data;
+  }
+};
+
 export default api; 

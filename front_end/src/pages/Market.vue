@@ -643,7 +643,7 @@ body, .market-container {
   transition: background 0.2s, box-shadow 0.2s;
 }
 .gradient-btn:hover {
-  background: linear-gradient(90deg, #409eff 0%, #36cfc9 100%) !important;
+  background: linear-gradient(90deg, #66b1ff 0%, #5cdbd3 100%) !important;
   box-shadow: 0 4px 16px #409eff33;
 }
 

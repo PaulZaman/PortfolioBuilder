@@ -6,7 +6,7 @@ from typing import Optional
 from app.services.yfinance_service import get_stock_data, get_info
 from app.models.portfolio import Portfolio
 from app.core.firebase_watchlist import get_all_stocks_firebase
-from app.core.firebase_portfolio import create_new_portfolio_firebase, get_user_portfolios_firebase, delete_portfolio_firebase, get_portfolio_firebase
+from app.core.firebase_portfolio import create_new_portfolio_firebase, get_user_portfolios_firebase, delete_portfolio_firebase, get_portfolio_firebase, update_portfolio_firebase
 from app.optimizitation.optimize import optimize_portfolio
 import datetime
 from app.services.datamanip import adjust_portfolio
@@ -209,3 +209,49 @@ async def get_metric_definitions(user=Depends(verify_token),):
     }
 
     return metric_definitions
+
+@router.put("/update/{ptfid}")
+async def update_portfolio(
+    ptfid: str,
+    data: dict = Body(...),
+    user=Depends(verify_token)
+):
+    try:
+        uid = user["localId"]
+        
+        # Get the portfolio to verify ownership
+        portfolio = await get_portfolio_firebase(ptfid)
+        if not portfolio:
+            raise HTTPException(status_code=404, detail="Portfolio not found")
+        
+        # Verify the portfolio belongs to the user
+        if portfolio.get("uid") != uid:
+            raise HTTPException(status_code=403, detail="Access denied")
+        
+        tickers = data.get("tickers", [])
+        weights = data.get("weights", [])
+        
+        # Validate input
+        if not tickers or not weights:
+            raise HTTPException(status_code=400, detail="Tickers and weights are required")
+        
+        if len(tickers) != len(weights):
+            raise HTTPException(status_code=400, detail="Number of tickers must match number of weights")
+        
+        if abs(sum(weights) - 1.0) > 0.0001:
+            raise HTTPException(status_code=400, detail="Weights must sum to 1")
+        
+        # Validate tickers
+        available_stocks = await get_all_stocks_firebase()
+        available_tickers = [stock["ticker"] for stock in available_stocks]
+        for ticker in tickers:
+            if ticker not in available_tickers:
+                raise HTTPException(status_code=400, detail=f"Ticker {ticker} is not available")
+        
+        # Update the portfolio
+        updated_portfolio = await update_portfolio_firebase(ptfid, tickers, weights)
+        
+        return {"message": "Portfolio updated successfully", "portfolio": updated_portfolio}
+        
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Error updating portfolio: {str(e)}")

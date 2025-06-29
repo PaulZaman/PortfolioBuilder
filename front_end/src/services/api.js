@@ -123,6 +123,10 @@ export const portfolioService = {
     return await api.post('/api/portfolios/create', portfolioData);
   },
 
+  async updatePortfolio(id, portfolioData) {
+    return await api.put(`/api/portfolios/update/${id}`, portfolioData);
+  },
+
   async deletePortfolio(id) {
     return await api.delete(`/api/portfolios/delete/${id}`);
   },
@@ -133,6 +137,10 @@ export const portfolioService = {
 
   async optimizePortfolio(ptfid, params) {
     return await api.post(`/api/portfolios/optimize/${ptfid}`, params);
+  },
+
+  async optimizeNewPortfolio(params) {
+    return await api.post('/api/portfolios/optimize', params);
   }
 };
 

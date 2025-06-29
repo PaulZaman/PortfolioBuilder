@@ -122,3 +122,32 @@ async def delete_portfolio_firebase(uid: str, ptfid: str):
 	# Remove the portfolio ID from the user's list of portfolios
 	existing_portfolios.remove(ptfid)
 	user_ref.update({"portfolios": existing_portfolios})
+
+async def update_portfolio_firebase(ptfid: str, tickers: list, weights: list):
+	"""Update a portfolio's tickers and weights in Firebase Firestore.
+
+	Args:
+		ptfid (str): The portfolio's unique identifier.
+		tickers (list): List of stock tickers in the portfolio.
+		weights (list): List of weights for each stock in the portfolio.
+	"""
+	# Get the portfolio document
+	ptf_ref = db.collection("portfolios").document(ptfid)
+	ptf_doc = ptf_ref.get()
+
+	if not ptf_doc.exists:
+		raise HTTPException(status_code=404, detail="Portfolio not found")
+	
+	ptf_data = ptf_doc.to_dict()
+	
+	# Update the tickers and weights
+	ptf_data["tickers"] = tickers
+	ptf_data["weights"] = weights
+	
+	# Save the updated portfolio
+	ptf_ref.update({
+		"tickers": tickers,
+		"weights": weights
+	})
+	
+	return ptf_data

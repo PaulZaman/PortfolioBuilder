@@ -2,9 +2,10 @@ from fastapi import APIRouter, HTTPException, Request, Depends
 from typing import List
 import json
 import os
-
+from app.services.firebase_watchlist import get_all_stocks_firebase
 from app.services.firebase_auth import verify_token
 from app.services.firebase_questionnaire import save_questionnaire_response_firebase, get_questionnaire_response_firebase
+from app.services.openai_questionnaire_suggestions import getTickerSuggestions, getRecommendedMetrics
 
 router = APIRouter(prefix="/api/questionnaires", tags=["Questionnaires"])
 
@@ -46,12 +47,35 @@ async def submit_questionnaire(
     return {"message": "Réponses enregistrées avec succès", "data": answers}
 
 @router.get("/stocks-suggestions")
-def get_stock_suggestions():
-    return {"suggestions": []}
+async def get_stock_suggestions(user=Depends(verify_token)):
+    uid = user["localId"]
+
+    # Get the user's questionnaire response
+    answers = await get_questionnaire_response_firebase(uid)
+    if not answers:
+        raise HTTPException(status_code=404, detail="Aucune réponse trouvée pour l'utilisateur.")
+    
+    # Get all available stocks from Firebase
+    stocks_firebase = await get_all_stocks_firebase()
+
+    # Generate stock suggestions based on the user's answers
+    result = getTickerSuggestions(stocks_firebase, answers)
+
+    return {"result": result}
 
 @router.get("/metric-suggestions")
-def get_metric_suggestions():
-    return {"suggestions": []}
+async def get_metric_suggestions(user=Depends(verify_token)):
+    uid = user["localId"]
+
+    # Get the user's questionnaire response
+    answers = await get_questionnaire_response_firebase(uid)
+    if not answers:
+        raise HTTPException(status_code=404, detail="Aucune réponse trouvée pour l'utilisateur.")
+
+    # Generate metric suggestions based on the user's answers
+    result =  getRecommendedMetrics(answers)
+
+    return {"result": result}
 
 @router.get("/response")
 async def get_user_questionnaire_response(user=Depends(verify_token)):

@@ -144,3 +144,10 @@ Body:
 { "tickers": [...], "start_date": "YYYY-MM-DD", "end_date": "YYYY-MM-DD", "interval": string (optional), "metric": string (optional), "allow_short": boolean (optional) }
 Returns:
 { "tickers": [...], "optimized_weights": { ticker: weight, ... }, "metric": string, "result": { "weights": { ticker: weight, ... }, "score": float, "cum_returns": { date: value, ... } } }
+
+
+GET    /api/questionnaires/    Returns all questions and possible answers
+POST    /api/questionnaires/    Submits or updates the user's responses (requires auth)
+GET    /api/questionnaires/response    Retrieves current user's saved questionnaire responses
+GET    /api/questionnaires/stocks-suggestions    Dummy route for stock suggestions
+GET    /api/questionnaires/metric-suggestions    Dummy route for metric suggestions

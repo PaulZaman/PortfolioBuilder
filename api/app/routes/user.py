@@ -1,8 +1,8 @@
 from fastapi import APIRouter, Depends
 from app.models.user import UserSignup, UserLogin, UserUpdate
-from app.core.firebase_auth import signup_user, login_user, verify_token
-from app.core.firebase_init import db
-from app.core.firebase_watchlist import get_all_stocks_firebase, add_to_watchlist_firebase, remove_from_watchlist_firebase, get_user_watchlist_firebase
+from app.services.firebase_auth import signup_user, login_user, verify_token
+from app.services.firebase_init import db
+from app.services.firebase_watchlist import get_all_stocks_firebase, add_to_watchlist_firebase, remove_from_watchlist_firebase, get_user_watchlist_firebase
 from fastapi import HTTPException
 import logging
 from app.services.yfinance_service import get_daily_performance

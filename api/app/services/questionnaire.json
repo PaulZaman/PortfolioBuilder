@@ -1,0 +1,56 @@
+{
+    "1": {
+        "question": "What is your investment philosophy?",
+        "answers": [
+            "I want to preserve my capital above all, even if it means low returns.",
+            "I\u2019m looking for a good balance between safety and performance.",
+            "I\u2019m willing to accept fluctuations to seek higher returns.",
+            "I aim for maximum return, even with high risk and volatility."
+        ]
+    },
+    "2": {
+        "question": "Which sectors are you most interested in?",
+        "answers": [
+            "Technology, innovation, and digital industries.",
+            "Healthcare, biotech, and life sciences.",
+            "Real estate, construction, or infrastructure.",
+            "Energy (renewable or traditional)."
+        ]
+    },
+    "3": {
+        "question": "In which geographic region do you want to invest?",
+        "answers": [
+            "I want a globally diversified portfolio.",
+            "I prefer to focus on Europe.",
+            "I mainly target North America (USA / Canada).",
+            "I\u2019m interested in Asia and emerging markets."
+        ]
+    },
+    "4": {
+        "question": "What type of assets are you most attracted to?",
+        "answers": [
+            "Publicly traded company stocks.",
+            "Bonds or more stable products.",
+            "Index funds (ETFs) for easy diversification.",
+            "A mixed portfolio combining several types of assets."
+        ]
+    },
+    "5": {
+        "question": "What is your investment time horizon?",
+        "answers": [
+            "I want quick returns: less than 2 years.",
+            "I\u2019m planning to invest over 2 to 5 years.",
+            "I prefer a long-term horizon: more than 5 years.",
+            "I\u2019m building long-term wealth: over 10 years."
+        ]
+    },
+    "6": {
+        "question": "How important are ESG (Environmental, Social, Governance) criteria in your investments?",
+        "answers": [
+            "No importance: I prioritize performance over ethical criteria.",
+            "I\u2019m aware of ESG but it\u2019s not a priority.",
+            "I want to include companies committed to responsible practices.",
+            "I want a portfolio fully aligned with ESG standards."
+        ]
+    }
+}

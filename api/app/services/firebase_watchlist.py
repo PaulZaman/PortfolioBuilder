@@ -1,5 +1,5 @@
 from fastapi import HTTPException
-from app.core.firebase_init import db
+from app.services.firebase_init import db
 
 
 DEFAULT_WATCHLIST = [

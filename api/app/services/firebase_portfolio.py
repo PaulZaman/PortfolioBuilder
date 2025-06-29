@@ -1,5 +1,5 @@
 from fastapi import HTTPException
-from app.core.firebase_init import db
+from app.services.firebase_init import db
 
 async def create_new_portfolio_firebase(uid: str, ptfid:str, tickers: list, weights: list, dates: list, performance: list, portfolio_name: str = "New Portfolio", start_date: str = None):
 	"""Create a new portfolio in Firebase Firestore.

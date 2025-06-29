@@ -1,5 +1,5 @@
 from fastapi import HTTPException, Header
-from app.core.firebase_init import logger, auth
+from app.services.firebase_init import logger, auth
 
 
 

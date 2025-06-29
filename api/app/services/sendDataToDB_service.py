@@ -16,19 +16,30 @@ BASE_URL = (
 
 # List of stocks to add
 stocks = [
-    {'ticker': 'XOM', 'name': 'Exxon Mobil Corporation', 'sector': 'Energy'},
-    {'ticker': 'AAPL', 'name': 'Apple Inc.', 'sector': 'Technology'},
-    {'ticker': 'MSFT', 'name': 'Microsoft Corporation', 'sector': 'Technology'},
-    {'ticker': 'GOOGL', 'name': 'Alphabet Inc.', 'sector': 'Communication Services'},
-    {'ticker': 'AMZN', 'name': 'Amazon.com, Inc.', 'sector': 'Consumer Discretionary'},
-    {'ticker': 'TSLA', 'name': 'Tesla, Inc.', 'sector': 'Consumer Discretionary'},
-    {'ticker': 'JNJ',  'name': 'Johnson & Johnson', 'sector': 'Health Care'},
-    {'ticker': 'PG',   'name': "Procter & Gamble Co.",  'sector': "Consumer Staples"},
-    {'ticker': 'VZ',   'name': "Verizon Communications Inc.",  'sector': "Communication Services"},
-    {'ticker': 'WMT',  'name': "Walmart Inc.",  'sector': "Consumer Staples"},
-    {'ticker': 'TEVA', 'name': 'Teva Pharmaceutical Industries Limited', 'sector': 'Health Care'},
+    # ESG ETFs
+    {'ticker': 'ESGU', 'name': 'iShares ESG Aware MSCI USA ETF', 'sector': 'ESG'},
+    {'ticker': 'SUSA', 'name': 'iShares MSCI USA ESG Select ETF', 'sector': 'ESG'},
+    {'ticker': 'VFTAX', 'name': 'Vanguard FTSE Social Index Fund Admiral Shares', 'sector': 'ESG'},
+    {'ticker': 'DSI', 'name': 'iShares MSCI KLD 400 Social ETF', 'sector': 'ESG'},
+    {'ticker': 'CRBN', 'name': 'iShares MSCI ACWI Low Carbon Target ETF', 'sector': 'ESG'},
+    {'ticker': 'SPYG', 'name': 'SPDR S&P 500 Growth ETF (incl. ESG-friendly firms)', 'sector': 'ESG / Growth'},
 
+    {'ticker': 'VTI', 'name': 'Vanguard Total Stock Market ETF', 'sector': 'Stable / Total Market'},
+    {'ticker': 'SCHD', 'name': 'Schwab U.S. Dividend Equity ETF', 'sector': 'Stable / Dividends'},
+    {'ticker': 'DGRO', 'name': 'iShares Core Dividend Growth ETF', 'sector': 'Stable / Dividends'},
+    {'ticker': 'USMV', 'name': 'iShares MSCI USA Min Vol Factor ETF', 'sector': 'Stable / Low Volatility'},
+    {'ticker': 'SPLV', 'name': 'Invesco S&P 500 Low Volatility ETF', 'sector': 'Stable / Low Volatility'},
+    {'ticker': 'VV', 'name': 'Vanguard Large-Cap ETF', 'sector': 'Stable / Large Cap'},
+
+    # Bond ETFs
+    {'ticker': 'TLT', 'name': 'iShares 20+ Year Treasury Bond ETF', 'sector': 'Bonds / Long-Term Treasuries'},
+    {'ticker': 'IEF', 'name': 'iShares 7-10 Year Treasury Bond ETF', 'sector': 'Bonds / Intermediate Treasuries'},
+    {'ticker': 'SHY', 'name': 'iShares 1-3 Year Treasury Bond ETF', 'sector': 'Bonds / Short-Term Treasuries'},
+    {'ticker': 'AGG', 'name': 'iShares Core U.S. Aggregate Bond ETF', 'sector': 'Bonds / Aggregate'},
+    {'ticker': 'BND', 'name': 'Vanguard Total Bond Market ETF', 'sector': 'Bonds / Total Market'},
+    {'ticker': 'TIP', 'name': 'iShares TIPS Bond ETF', 'sector': 'Bonds / Inflation-Protected'},
 ]
+
 # Iterate over the stocks and add them to Firestore
 for stock in stocks:
     payload = {

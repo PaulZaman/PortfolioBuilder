@@ -1,12 +1,12 @@
 from fastapi import APIRouter, Depends, HTTPException, Body, Query
-from app.core.firebase_init import db
-from app.core.firebase_auth import verify_token
+from app.services.firebase_init import db
+from app.services.firebase_auth import verify_token
 import uuid
 from typing import Optional
 from app.services.yfinance_service import get_stock_data, get_info
 from app.models.portfolio import Portfolio
-from app.core.firebase_watchlist import get_all_stocks_firebase
-from app.core.firebase_portfolio import create_new_portfolio_firebase, get_user_portfolios_firebase, delete_portfolio_firebase, get_portfolio_firebase, update_portfolio_firebase
+from app.services.firebase_watchlist import get_all_stocks_firebase
+from app.services.firebase_portfolio import create_new_portfolio_firebase, get_user_portfolios_firebase, delete_portfolio_firebase, get_portfolio_firebase, update_portfolio_firebase
 from app.optimizitation.optimize import optimize_portfolio
 import datetime
 from app.services.datamanip import adjust_portfolio

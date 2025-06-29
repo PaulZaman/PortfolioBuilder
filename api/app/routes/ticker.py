@@ -1,8 +1,8 @@
 # app/api/tickers.py
 
 from fastapi import APIRouter, Depends, HTTPException
-from app.core.firebase_auth import verify_token
-from app.core.firebase_watchlist import get_all_stocks_firebase
+from app.services.firebase_auth import verify_token
+from app.services.firebase_watchlist import get_all_stocks_firebase
 from app.services.yfinance_service import get_info, get_stock_data
 from datetime import datetime, timedelta
 import yfinance as yf

@@ -323,7 +323,7 @@ let chart = null;
 
 const newPortfolio = ref({
   name: '',
-  start_date: '',
+  start_date: '2010-01-01',
   items: [{ ticker: '', weight: 0 }]
 });
 
@@ -492,7 +492,7 @@ const resetForm = () => {
   }
   newPortfolio.value = {
     name: '',
-    start_date: '',
+    start_date: '2010-01-01',
     items: [{ ticker: '', weight: 0 }]
   };
 };

@@ -584,16 +584,25 @@ const removeTicker = (idx) => {
   }
 };
 
-// Automatically fill one row when initialized
-watch(
-  () => aiStockSuggestion.value,
-  (val) => {
-    if (val && val.tickers && newPortfolio.value.items.length === 0) {
-      newPortfolio.value.items = [{ ticker: '', weight: 0 }];
+// watch create portfolio modal open
+watch(showCreatePortfolioModal, (val) => {
+  if (val && aiStockSuggestion.value && aiStockSuggestion.value.tickers) {
+    // only fill when items is empty
+    if (newPortfolio.value.items.length === 0) {
+      const tickers = aiStockSuggestion.value.tickers;
+      const n = tickers.length;
+      if (n > 0) {
+        const avgWeight = parseFloat((1 / n).toFixed(4));
+        newPortfolio.value.items = tickers.map(ticker => ({
+          ticker,
+          weight: avgWeight
+        }));
+        // set default start date
+        newPortfolio.value.start_date = '2010-01-01';
+      }
     }
-  },
-  { immediate: true }
-);
+  }
+});
 
 // If aiMetricSuggestion is asynchronous, watch needs to automatically assign values
 watch(
@@ -605,6 +614,19 @@ watch(
   },
   { immediate: true }
 );
+
+watch(showOptimizeModal, (val) => {
+  if (val) {
+    // set start date to portfolio start date
+    optimizeForm.value.start_date = newPortfolio.value.start_date;
+    // set end date to today
+    const today = new Date();
+    const yyyy = today.getFullYear();
+    const mm = String(today.getMonth() + 1).padStart(2, '0');
+    const dd = String(today.getDate()).padStart(2, '0');
+    optimizeForm.value.end_date = `${yyyy}-${mm}-${dd}`;
+  }
+});
 
 const metricMap = {
   'sharpe': 'sharpe',

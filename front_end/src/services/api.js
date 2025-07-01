@@ -160,18 +160,33 @@ export const questionnaireService = {
     return response.data;
   },
 
+  async submitQuestionnaireRaw(answersArray) {
+    const response = await api.post('/api/questionnaires/', { answers: answersArray });
+    return response.data;
+  },
+
   async getUserResponse() {
     const response = await api.get('/api/questionnaires/response');
     return response.data;
   },
 
   async getStockSuggestions() {
-    const response = await api.get('/api/questionnaires/stocks-suggestions');
+    const response = await api.get('/api/questionnaires/stock-suggestions');
     return response.data;
   },
 
   async getMetricSuggestions() {
     const response = await api.get('/api/questionnaires/metric-suggestions');
+    return response.data;
+  },
+
+  async generateStockSuggestions() {
+    const response = await api.get('/api/questionnaires/generate-stock-suggestions');
+    return response.data;
+  },
+
+  async generateMetricSuggestions() {
+    const response = await api.get('/api/questionnaires/generate-metric-suggestions');
     return response.data;
   }
 };

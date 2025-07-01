@@ -36,7 +36,7 @@
             @click="viewResponses"
             icon="View"
           >
-            View answers
+            View answers and AI suggestions
           </el-button>
         </div>
         
@@ -60,13 +60,45 @@
           class="response-item"
         >
           <h5>{{ question.question }}</h5>
-          <p class="response-answer">{{ userResponses.answers[questionId] }}</p>
+          <p class="response-answer">
+            <template v-if="question.multi">
+              <el-tag
+                v-for="(ans, idx) in userResponses.answers[questionId]"
+                :key="idx"
+                type="info"
+                style="margin-right: 4px;"
+              >{{ ans }}</el-tag>
+            </template>
+            <template v-else>
+              {{ userResponses.answers[questionId] }}
+            </template>
+          </p>
         </div>
       </div>
       <template #footer>
         <el-button @click="showResponsesDialog = false">Close</el-button>
         <el-button type="primary" @click="router.push('/questionnaire')">Re-fill</el-button>
       </template>
+      <div v-if="showResponsesDialog">
+        <div v-if="aiLoading" class="ai-suggestion-block" style="text-align:center;">
+          <el-icon class="is-loading" style="font-size:28px;margin-bottom:8px;"/>
+          <div>AI suggestions loading...</div>
+        </div>
+        <div v-else>
+          <div v-if="aiStockSuggestion" class="ai-suggestion-block">
+            <h4>AI stock/asset suggestions</h4>
+            <div style="margin-bottom: 8px;">
+              <el-tag v-for="ticker in aiStockSuggestion.tickers" :key="ticker" type="info" style="margin-right: 4px;">{{ ticker }}</el-tag>
+            </div>
+            <p style="color: #888;">{{ aiStockSuggestion.explanation }}</p>
+          </div>
+          <div v-if="aiMetricSuggestion" class="ai-suggestion-block">
+            <h4>AI metric suggestions</h4>
+            <el-tag type="success">{{ aiMetricSuggestion.recommended_metric }}</el-tag>
+            <p style="color: #888;">{{ aiMetricSuggestion.explanation }}</p>
+          </div>
+        </div>
+      </div>
     </el-dialog>
   </div>
 </template>
@@ -82,6 +114,9 @@ const router = useRouter();
 const questions = ref({});
 const userResponses = ref(null);
 const showResponsesDialog = ref(false);
+const aiStockSuggestion = ref(null);
+const aiMetricSuggestion = ref(null);
+const aiLoading = ref(false);
 
 const hasCompleted = computed(() => {
   return userResponses.value && userResponses.value.answers && 
@@ -110,10 +145,12 @@ const loadUserResponse = async () => {
       const formattedAnswers = {};
       Object.keys(response.questionnaire_response).forEach(questionId => {
         const answerArray = response.questionnaire_response[questionId];
-        // Take the first answer (because the frontend only supports single selection)
-        formattedAnswers[questionId] = answerArray[0] || '';
+        if (questions.value[questionId]?.multi) {
+          formattedAnswers[questionId] = answerArray || [];
+        } else {
+          formattedAnswers[questionId] = answerArray[0] || '';
+        }
       });
-      
       userResponses.value = { answers: formattedAnswers };
     }
   } catch (error) {
@@ -122,8 +159,24 @@ const loadUserResponse = async () => {
   }
 };
 
+const loadAISuggestions = async () => {
+  aiLoading.value = true;
+  try {
+    const stockRes = await questionnaireService.getStockSuggestions();
+    aiStockSuggestion.value = stockRes.result;
+    const metricRes = await questionnaireService.getMetricSuggestions();
+    aiMetricSuggestion.value = metricRes.result;
+  } catch (e) {
+    aiStockSuggestion.value = null;
+    aiMetricSuggestion.value = null;
+  } finally {
+    aiLoading.value = false;
+  }
+};
+
 const viewResponses = () => {
   showResponsesDialog.value = true;
+  loadAISuggestions();
 };
 </script>
 
@@ -252,5 +305,14 @@ const viewResponses = () => {
   .preview-actions .el-button {
     width: 100%;
   }
+}
+
+.ai-suggestion-block {
+  margin: 24px auto 0 auto;
+  max-width: 600px;
+  background: #f8f9fa;
+  border-radius: 10px;
+  padding: 18px 24px;
+  box-shadow: 0 2px 8px #409eff11;
 }
 </style> 

@@ -15,7 +15,8 @@
             "Healthcare, biotech, and life sciences.",
             "Real estate, construction, or infrastructure.",
             "Energy (renewable or traditional)."
-        ]
+        ],
+        "multi": true
     },
     "3": {
         "question": "In which geographic region do you want to invest?",
@@ -24,7 +25,8 @@
             "I prefer to focus on Europe.",
             "I mainly target North America (USA / Canada).",
             "I\u2019m interested in Asia and emerging markets."
-        ]
+        ],
+        "multi": true
     },
     "4": {
         "question": "What type of assets are you most attracted to?",
@@ -33,7 +35,8 @@
             "Bonds or more stable products.",
             "Index funds (ETFs) for easy diversification.",
             "A mixed portfolio combining several types of assets."
-        ]
+        ],
+        "multi": true
     },
     "5": {
         "question": "What is your investment time horizon?",

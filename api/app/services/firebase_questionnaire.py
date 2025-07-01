@@ -49,3 +49,45 @@ async def get_questionnaire_response_firebase(uid: str):
         raise HTTPException(status_code=404, detail="No questionnaire response found for this user.")
 
     return answers
+
+async def save_ai_metric_suggestions(uid: str, result: dict):
+    if not uid or not result:
+        raise HTTPException(status_code=400, detail="Missing uid or result")
+
+    user_ref = db.collection("users").document(uid)
+    user_ref.set({"ai_metric_suggestions": result}, merge=True)
+    return {"uid": uid, "ai_metric_suggestions": result}
+
+async def get_ai_metric_suggestions(uid: str):
+    user_ref = db.collection("users").document(uid)
+    user_doc = user_ref.get()
+
+    if not user_doc.exists:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    data = user_doc.to_dict().get("ai_metric_suggestions")
+    if not data:
+        raise HTTPException(status_code=404, detail="No metric suggestions found")
+
+    return data
+
+async def save_ai_asset_suggestions(uid: str, result: dict):
+    if not uid or not result:
+        raise HTTPException(status_code=400, detail="Missing uid or result")
+
+    user_ref = db.collection("users").document(uid)
+    user_ref.set({"ai_asset_suggestions": result}, merge=True)
+    return {"uid": uid, "ai_asset_suggestions": result}
+
+async def get_ai_asset_suggestions(uid: str):
+    user_ref = db.collection("users").document(uid)
+    user_doc = user_ref.get()
+
+    if not user_doc.exists:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    data = user_doc.to_dict().get("ai_asset_suggestions")
+    if not data:
+        raise HTTPException(status_code=404, detail="No asset suggestions found")
+
+    return data

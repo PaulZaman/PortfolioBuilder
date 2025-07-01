@@ -63,6 +63,17 @@ async def generate_stock_suggestions(user=Depends(verify_token)):
     stocks_firebase = await get_all_stocks_firebase()
     result = getTickerSuggestions(stocks_firebase, answers)
 
+    # Now we will check to make sure these tickers are valid
+    available_tickers = [stock["ticker"] for stock in stocks_firebase]
+
+    # Get tickers that are suggested by the AI
+    result_tickers = [ticker for ticker in result['tickers']]
+
+    # Filter out invalid tickers
+    valid_tickers = [ticker for ticker in result_tickers if ticker in available_tickers]
+    result['tickers'] = valid_tickers
+
+    # Save the AI suggestions to Firebase
     await save_ai_asset_suggestions(uid, {"result": result})
 
     return {"result": result}

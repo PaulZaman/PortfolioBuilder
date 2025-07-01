@@ -75,7 +75,7 @@ router.beforeEach(async (to, from, next) => {
     // if authenticated, verify token is valid
     try {
       await authService.getUserInfo();
-      // 只在用户第一次登录后自动跳转到问卷页面，之后不再强制
+      // only redirect to questionnaire page when user is first time login, after that, no more redirect
       if (!localStorage.getItem('questionnaireRedirected')) {
         try {
           const res = await questionnaireService.getUserResponse();

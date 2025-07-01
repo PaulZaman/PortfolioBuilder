@@ -533,7 +533,7 @@ const applyOptimizedWeights = async () => {
     const tickers = Object.keys(optimizeResult.value.optimized_weights);
     const weights = tickers.map(ticker => parseFloat(optimizeResult.value.optimized_weights[ticker]));
 
-    // 校验
+    // check
     if (tickers.length === 0 || weights.length === 0) {
       ElMessage.error('Please check stock and weight');
       return;
@@ -558,7 +558,7 @@ const applyOptimizedWeights = async () => {
       weights
     });
     ElMessage.success('Optimized weights updated successfully');
-    // 跳转到portfolio页面
+    // redirect to portfolio page
     setTimeout(() => {
       router.push('/portfolio');
     }, 800);

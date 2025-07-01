@@ -168,7 +168,7 @@ const showQuestionnaireAlert = ref(false);
 onMounted(async () => {
   try {
     userInfo.value = await authService.getUserInfo();
-    // 检查问卷状态
+    // check questionnaire status
     try {
       const res = await questionnaireService.getUserResponse();
       if (!res || !res.questionnaire_response || Object.keys(res.questionnaire_response).length === 0) {

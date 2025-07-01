@@ -281,6 +281,9 @@
               Remove
             </el-button>
           </div>
+          <div style="margin-top: 8px; text-align: right;">
+            <span>Sum: {{ totalWeight.toFixed(2) }}</span>
+          </div>
         </el-form-item>
       </el-form>
       <template #footer>
@@ -303,7 +306,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, nextTick, onUnmounted } from 'vue';
+import { ref, onMounted, nextTick, onUnmounted, computed } from 'vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { InfoFilled } from '@element-plus/icons-vue';
 import { portfolioService, marketService } from '../services/api';
@@ -336,6 +339,10 @@ const rules = {
     { required: true, message: 'Please select start date', trigger: 'change' }
   ]
 };
+
+const totalWeight = computed(() => {
+  return newPortfolio.value.items.reduce((sum, item) => sum + (parseFloat(item.weight) || 0), 0);
+});
 
 const loadPortfolios = async () => {
   loading.value = true;
@@ -875,7 +882,6 @@ onMounted(() => {
   margin: 0;
   padding: 0;
   overflow-x: hidden;
-  position: fixed;
   top: 0;
   left: 0;
 }

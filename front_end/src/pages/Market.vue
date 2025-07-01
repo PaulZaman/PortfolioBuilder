@@ -69,7 +69,7 @@
                 <el-table-column label="Actions" min-width="100" fixed="right">
                   <template #default="scope">
                     <el-button
-                      class="remove-btn gradient-btn"
+                      class="remove-btn red-gradient-btn"
                       type="danger"
                       size="small"
                       @click.stop="removeFromWatchlist(scope.row.ticker)"
@@ -346,7 +346,6 @@ export default {
   margin: 0;
   padding: 0;
   overflow-x: hidden;
-  position: fixed;
   top: 0;
   left: 0;
 }
@@ -439,13 +438,15 @@ export default {
 .remove-btn {
   border-radius: 16px !important;
   font-weight: 500;
-  background: #ffeaea;
-  color: #e74c3c;
   border: none;
   transition: background 0.2s, color 0.2s;
 }
-.remove-btn:hover {
-  background: #ffbdbd !important;
+.red-gradient-btn {
+  background: linear-gradient(90deg, #f56c6c 0%, #ff9c9c 100%) !important;
+  color: #fff !important;
+}
+.red-gradient-btn:hover {
+  background: linear-gradient(90deg, #f78989 0%, #ffb3b3 100%) !important;
   color: #fff !important;
 }
 

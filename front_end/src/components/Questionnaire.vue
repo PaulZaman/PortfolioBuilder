@@ -111,6 +111,9 @@
                   >Delete</el-button>
                 </div>
               </div>
+              <div style="margin-top: 8px; text-align: right;">
+                <span>Sum: {{ totalWeight.toFixed(2) }}</span>
+              </div>
             </el-form-item>
           </el-form>
           <template #footer>
@@ -272,7 +275,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted, watch } from 'vue';
+import { ref, reactive, onMounted, watch, computed } from 'vue';
 import { ElMessage } from 'element-plus';
 import { useRouter } from 'vue-router';
 import { questionnaireService } from '../services/api';
@@ -319,6 +322,10 @@ const portfolioRules = {
   name: [{ required: true, message: 'Please enter portfolio name', trigger: 'blur' }],
   start_date: [{ required: true, message: 'Please select start date', trigger: 'change' }]
 };
+
+const totalWeight = computed(() => {
+  return newPortfolio.value.items.reduce((sum, item) => sum + (parseFloat(item.weight) || 0), 0);
+});
 
 onMounted(async () => {
   await loadQuestions();
@@ -592,7 +599,7 @@ watch(showCreatePortfolioModal, (val) => {
       const tickers = aiStockSuggestion.value.tickers;
       const n = tickers.length;
       if (n > 0) {
-        const avgWeight = parseFloat((1 / n).toFixed(4));
+        const avgWeight = parseFloat((1 / n).toFixed(2));
         newPortfolio.value.items = tickers.map(ticker => ({
           ticker,
           weight: avgWeight

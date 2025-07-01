@@ -1,5 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router';
-import { authService } from '../services/api';
+import { authService, questionnaireService } from '../services/api';
 
 const routes = [
   {
@@ -75,6 +75,21 @@ router.beforeEach(async (to, from, next) => {
     // if authenticated, verify token is valid
     try {
       await authService.getUserInfo();
+      // 只在用户第一次登录后自动跳转到问卷页面，之后不再强制
+      if (!localStorage.getItem('questionnaireRedirected')) {
+        try {
+          const res = await questionnaireService.getUserResponse();
+          if (!res || !res.questionnaire_response || Object.keys(res.questionnaire_response).length === 0) {
+            localStorage.setItem('questionnaireRedirected', 'true');
+            next({ path: '/questionnaire' });
+            return;
+          }
+        } catch (e) {
+          localStorage.setItem('questionnaireRedirected', 'true');
+          next({ path: '/questionnaire' });
+          return;
+        }
+      }
       next();
     } catch (error) {
       // token is invalid, clear and redirect to login page

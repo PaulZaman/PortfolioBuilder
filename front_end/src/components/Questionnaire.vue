@@ -41,6 +41,127 @@
             <p style="color: #888;">{{ aiMetricSuggestion.explanation }}</p>
           </div>
         </div>
+
+        <!-- Create Portfolio button and modal -->
+        <div class="portfolio-btn-group">
+          <el-button
+            v-if="aiStockSuggestion && aiStockSuggestion.tickers && aiStockSuggestion.tickers.length"
+            type="primary"
+            class="round-btn gradient-btn"
+            @click="showCreatePortfolioModal = true"
+          >
+            Create Portfolio
+          </el-button>
+          <el-button
+            v-if="portfolioCreated"
+            type="success"
+            class="round-btn gradient-btn"
+            @click="showOptimizeModal = true"
+          >
+            Optimize Portfolio
+          </el-button>
+        </div>
+
+        <el-dialog
+          v-model="showCreatePortfolioModal"
+          title="Create Portfolio"
+          width="800px"
+          :close-on-click-modal="false"
+          class="enhanced-dialog create-portfolio-dialog"
+        >
+          <el-form :model="newPortfolio" :rules="portfolioRules" ref="portfolioFormRef" label-width="120px" class="create-portfolio-form">
+            <el-form-item label="Portfolio Name" prop="name">
+              <el-input v-model="newPortfolio.name" placeholder="Please enter portfolio name" />
+            </el-form-item>
+            <el-form-item label="Start Date" prop="start_date">
+              <el-date-picker v-model="newPortfolio.start_date" type="date" placeholder="Please select start date" style="width: 100%" />
+            </el-form-item>
+            <el-form-item label="Stock and Weight">
+              <div class="portfolio-row-list">
+                <div v-for="(item, idx) in newPortfolio.items" :key="idx" class="portfolio-row">
+                  <el-select
+                    v-model="item.ticker"
+                    placeholder="Please select stock"
+                    style="width: 180px"
+                    :disabled="false"
+                    filterable
+                  >
+                    <el-option
+                      v-for="ticker in aiStockSuggestion.tickers"
+                      :key="ticker"
+                      :label="ticker"
+                      :value="ticker"
+                      :disabled="isTickerSelected(ticker, idx)"
+                    />
+                  </el-select>
+                  <el-input-number
+                    v-model="item.weight"
+                    :min="0"
+                    :max="1"
+                    :step="0.01"
+                    :precision="2"
+                    placeholder="Weight"
+                    style="width: 120px"
+                  />
+                  <el-button
+                    type="danger"
+                    class="round-btn remove-btn delete-btn"
+                    @click="removeTicker(idx)"
+                    :disabled="newPortfolio.items.length === 1"
+                  >Delete</el-button>
+                </div>
+              </div>
+            </el-form-item>
+          </el-form>
+          <template #footer>
+            <div class="dialog-footer-btns">
+              <el-button
+                type="primary"
+                class="round-btn gradient-btn add-btn"
+                @click="addTicker"
+                :disabled="newPortfolio.items.length >= aiStockSuggestion.tickers.length"
+              >Add Stock</el-button>
+              <el-button class="round-btn info-btn" @click="showCreatePortfolioModal = false">Cancel</el-button>
+              <el-button type="primary" class="round-btn gradient-btn" :loading="creatingPortfolio" @click="submitPortfolio">Create</el-button>
+            </div>
+          </template>
+        </el-dialog>
+
+        <!-- Optimize button and modal -->
+        <el-dialog
+          v-model="showOptimizeModal"
+          title="Optimize Portfolio"
+          width="500px"
+          :close-on-click-modal="false"
+        >
+          <el-form :model="optimizeForm" label-width="120px">
+            <el-form-item label="Optimize Target">
+              <span style="font-weight:bold;">{{ optimizeForm.metric }}</span>
+            </el-form-item>
+            <el-form-item label="Start Date">
+              <el-date-picker v-model="optimizeForm.start_date" type="date" style="width: 100%" />
+            </el-form-item>
+            <el-form-item label="End Date">
+              <el-date-picker v-model="optimizeForm.end_date" type="date" style="width: 100%" />
+            </el-form-item>
+            <el-form-item label="Allow Short">
+              <el-switch v-model="optimizeForm.allow_short" />
+            </el-form-item>
+          </el-form>
+          <template #footer>
+            <div class="dialog-footer-btns">
+              <el-button class="round-btn info-btn" @click="showOptimizeModal = false">Cancel</el-button>
+              <el-button type="primary" class="round-btn gradient-btn" :loading="optimizing" @click="submitOptimize">Start Optimize</el-button>
+            </div>
+          </template>
+          <div v-if="optimizeResult">
+            <h4>Optimize Result</h4>
+            <div v-for="(weight, ticker) in optimizeResult.optimized_weights" :key="ticker">
+              {{ ticker }}: {{ (weight * 100).toFixed(2) }}%
+            </div>
+            <el-button type="success" class="round-btn green-gradient-btn" @click="applyOptimizedWeights" style="margin-top: 12px;">Apply Optimized Weights</el-button>
+          </div>
+        </el-dialog>
       </div>
 
       <div v-else class="questionnaire-form">
@@ -151,9 +272,11 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue';
+import { ref, reactive, onMounted, watch } from 'vue';
 import { ElMessage } from 'element-plus';
+import { useRouter } from 'vue-router';
 import { questionnaireService } from '../services/api';
+import { portfolioService } from '../services/api';
 
 const loading = ref(true);
 const submitting = ref(false);
@@ -165,6 +288,15 @@ const questionnaireForm = ref(null);
 const aiStockSuggestion = ref(null);
 const aiMetricSuggestion = ref(null);
 const aiLoading = ref(false);
+const showCreatePortfolioModal = ref(false);
+const creatingPortfolio = ref(false);
+const portfolioCreated = ref(false);
+const optimizeResult = ref(null);
+const portfolioFormRef = ref(null);
+const showOptimizeModal = ref(false);
+const optimizing = ref(false);
+const createdPortfolioId = ref(null);
+const router = useRouter();
 
 const formData = reactive({
   answers: {}
@@ -175,6 +307,17 @@ const rules = {
     type: 'object',
     required: true
   }
+};
+
+const newPortfolio = ref({
+  name: '',
+  start_date: '',
+  items: []
+});
+
+const portfolioRules = {
+  name: [{ required: true, message: 'Please enter portfolio name', trigger: 'blur' }],
+  start_date: [{ required: true, message: 'Please select start date', trigger: 'change' }]
 };
 
 onMounted(async () => {
@@ -295,6 +438,188 @@ const resetQuestionnaire = () => {
 const viewResponses = () => {
   showResponsesDialog.value = true;
 };
+
+const submitPortfolio = async () => {
+  await portfolioFormRef.value.validate();
+  creatingPortfolio.value = true;
+  try {
+    // Filter out empty rows
+    const validItems = newPortfolio.value.items.filter(item => item.ticker && item.weight !== null && item.weight !== '');
+    const tickers = validItems.map(item => item.ticker);
+    const weights = validItems.map(item => parseFloat(item.weight));
+    const totalWeight = weights.reduce((a, b) => a + b, 0);
+
+    if (tickers.length === 0) {
+      ElMessage.error('Please select at least one stock');
+      return;
+    }
+    if (tickers.length !== weights.length) {
+      ElMessage.error('Stock and weight number do not match');
+      return;
+    }
+    if (Math.abs(totalWeight - 1) > 0.0001) {
+      ElMessage.error('Weight sum must be 1');
+      return;
+    }
+    if (!newPortfolio.value.name || !newPortfolio.value.start_date) {
+      ElMessage.error('Please fill in all information');
+      return;
+    }
+
+    // Date formatting
+    let formattedDate = newPortfolio.value.start_date;
+    if (formattedDate instanceof Date) {
+      formattedDate = formattedDate.toISOString().split('T')[0];
+    }
+
+    const payload = {
+      name: newPortfolio.value.name,
+      start_date: formattedDate,
+      tickers,
+      weights
+    };
+    const res = await portfolioService.createPortfolio(payload);
+    console.log('Create portfolio return:', res);
+
+    // Correctly extract ID
+    createdPortfolioId.value = res.data?.portfolio?.ptfid || res.data?.portfolio?.id || null;
+    console.log('New portfolio ID:', createdPortfolioId.value);
+
+    ElMessage.success('Portfolio created successfully');
+    showCreatePortfolioModal.value = false;
+    portfolioCreated.value = true;
+  } catch (e) {
+    ElMessage.error('Create failed: ' + (e.response?.data?.detail || e.message));
+  } finally {
+    creatingPortfolio.value = false;
+  }
+};
+
+const optimizeForm = ref({
+  metric: aiMetricSuggestion.value?.recommended_metric || 'sharpe',
+  start_date: '',
+  end_date: '',
+  allow_short: false
+});
+
+const submitOptimize = async () => {
+  optimizing.value = true;
+  try {
+    const tickers = newPortfolio.value.items.map(item => item.ticker);
+    const params = {
+      tickers,
+      metric: getBackendMetric(optimizeForm.value.metric),
+      start_date: optimizeForm.value.start_date,
+      end_date: optimizeForm.value.end_date,
+      allow_short: optimizeForm.value.allow_short
+    };
+    console.log('Optimize parameters:', params);
+    const res = await portfolioService.optimizeNewPortfolio(params);
+    optimizeResult.value = res.data;
+    ElMessage.success('Optimize completed');
+  } catch (e) {
+    ElMessage.error('Optimize failed: ' + (e.response?.data?.detail || e.message));
+  } finally {
+    optimizing.value = false;
+  }
+};
+
+const applyOptimizedWeights = async () => {
+  try {
+    if (!createdPortfolioId.value) {
+      ElMessage.error('Portfolio ID not found, cannot update');
+      return;
+    }
+    const tickers = Object.keys(optimizeResult.value.optimized_weights);
+    const weights = tickers.map(ticker => parseFloat(optimizeResult.value.optimized_weights[ticker]));
+
+    // 校验
+    if (tickers.length === 0 || weights.length === 0) {
+      ElMessage.error('Please check stock and weight');
+      return;
+    }
+    if (tickers.length !== weights.length) {
+      ElMessage.error('Stock and weight number do not match');
+      return;
+    }
+    if (weights.some(w => isNaN(w))) {
+      ElMessage.error('Weight must be a number');
+      return;
+    }
+    const totalWeight = weights.reduce((a, b) => a + b, 0);
+    if (Math.abs(totalWeight - 1) > 0.0001) {
+      ElMessage.error('Weight sum must be 1');
+      return;
+    }
+
+    // Directly call updatePortfolio
+    await portfolioService.updatePortfolio(createdPortfolioId.value, {
+      tickers,
+      weights
+    });
+    ElMessage.success('Optimized weights updated successfully');
+    // 跳转到portfolio页面
+    setTimeout(() => {
+      router.push('/portfolio');
+    }, 800);
+  } catch (e) {
+    ElMessage.error('Apply failed: ' + (e.response?.data?.detail || e.message));
+  }
+};
+
+// Check if a ticker has been selected (except the current row)
+const isTickerSelected = (ticker, currentIndex) => {
+  return newPortfolio.value.items.some((item, idx) => idx !== currentIndex && item.ticker === ticker);
+};
+
+// Add/delete stock row
+const addTicker = () => {
+  if (newPortfolio.value.items.length < aiStockSuggestion.value.tickers.length) {
+    newPortfolio.value.items.push({ ticker: '', weight: 0 });
+  }
+};
+const removeTicker = (idx) => {
+  if (newPortfolio.value.items.length > 1) {
+    newPortfolio.value.items.splice(idx, 1);
+  }
+};
+
+// Automatically fill one row when initialized
+watch(
+  () => aiStockSuggestion.value,
+  (val) => {
+    if (val && val.tickers && newPortfolio.value.items.length === 0) {
+      newPortfolio.value.items = [{ ticker: '', weight: 0 }];
+    }
+  },
+  { immediate: true }
+);
+
+// If aiMetricSuggestion is asynchronous, watch needs to automatically assign values
+watch(
+  () => aiMetricSuggestion.value,
+  (val) => {
+    if (val && val.recommended_metric) {
+      optimizeForm.value.metric = val.recommended_metric;
+    }
+  },
+  { immediate: true }
+);
+
+const metricMap = {
+  'sharpe': 'sharpe',
+  'sortino': 'sortino',
+  'total_return': 'total return',
+  'total return': 'total return',
+  'weekly_return': 'weekly return',
+  'weekly return': 'weekly return',
+  'daily_return': 'daily return',
+  'daily return': 'daily return'
+};
+
+function getBackendMetric(metric) {
+  return metricMap[metric] || metric;
+}
 </script>
 
 <style scoped>
@@ -541,5 +866,91 @@ const viewResponses = () => {
   border-radius: 10px;
   padding: 18px 24px;
   box-shadow: 0 2px 8px #409eff11;
+}
+
+.create-portfolio-dialog >>> .el-dialog {
+  border-radius: 18px;
+}
+.create-portfolio-form {
+  padding: 16px 8px 0 8px;
+}
+.portfolio-row-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+.portfolio-row {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 12px;
+  align-items: center;
+  width: 100%;
+}
+.portfolio-row .el-select,
+.portfolio-row .el-input-number {
+  flex-shrink: 0;
+}
+.portfolio-row .delete-btn {
+  margin-left: 8px;
+  min-width: 70px;
+}
+.dialog-footer-btns {
+  display: flex;
+  justify-content: flex-end;
+  gap: 16px;
+  padding: 8px 0 0 0;
+}
+@media (max-width: 900px) {
+  .create-portfolio-dialog >>> .el-dialog {
+    width: 98vw !important;
+    min-width: unset !important;
+    max-width: 100vw !important;
+  }
+  .portfolio-row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+  .portfolio-row-list {
+    gap: 0;
+  }
+  .dialog-footer-btns {
+    flex-direction: column;
+    gap: 8px;
+    align-items: stretch;
+  }
+}
+.remove-btn {
+  background: linear-gradient(90deg, #f56c6c 0%, #ff9c9c 100%) !important;
+  border: none !important;
+  color: white !important;
+}
+.remove-btn:hover {
+  background: linear-gradient(90deg, #f78989 0%, #ffb3b3 100%) !important;
+  color: white !important;
+}
+.portfolio-btn-group {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 24px;
+  margin-top: 24px;
+  flex-wrap: wrap;
+}
+@media (max-width: 600px) {
+  .portfolio-btn-group {
+    flex-direction: column;
+    gap: 12px;
+    margin-top: 16px;
+  }
+}
+.green-gradient-btn {
+  background: linear-gradient(90deg, #67c23a 0%, #b7eb8f 100%) !important;
+  border: none !important;
+  color: white !important;
+}
+.green-gradient-btn:hover {
+  background: linear-gradient(90deg, #95de64 0%, #eaffd0 100%) !important;
+  color: white !important;
 }
 </style> 

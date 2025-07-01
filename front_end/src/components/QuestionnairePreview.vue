@@ -3,7 +3,7 @@
     <el-card class="preview-card">
       <template #header>
         <div class="card-header">
-          <span>Questionnaire</span>
+          <span>Questionnaire and AI Suggestions</span>
           <el-tag 
             :type="hasCompleted ? 'success' : 'warning'" 
             size="small"

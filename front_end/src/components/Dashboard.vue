@@ -30,6 +30,25 @@
       </el-header>
       
       <el-main>
+        <el-alert
+          v-if="showQuestionnaireAlert"
+          title="You haven't completed the questionnaire, click to fill in"
+          type="warning"
+          show-icon
+          :closable="true"
+          class="questionnaire-alert"
+          @close="showQuestionnaireAlert = false"
+        />
+        <el-button
+          v-if="showQuestionnaireAlert"
+          class="questionnaire-btn"
+          type="primary"
+          size="small"
+          @click="router.push('/questionnaire')"
+          style="margin-bottom: 24px;"
+        >
+          Fill in the questionnaire
+        </el-button>
         <el-row :gutter="20">
           <el-col :span="24">
             <el-card class="welcome-card">
@@ -139,15 +158,25 @@ import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { ElMessage } from 'element-plus';
 import { ArrowDown, TrendCharts, Collection, User, Setting, SwitchButton, DataAnalysis, Document } from '@element-plus/icons-vue';
-import { authService } from '../services/api';
+import { authService, questionnaireService } from '../services/api';
 import QuestionnairePreview from './QuestionnairePreview.vue';
 
 const router = useRouter();
 const userInfo = ref(null);
+const showQuestionnaireAlert = ref(false);
 
 onMounted(async () => {
   try {
     userInfo.value = await authService.getUserInfo();
+    // 检查问卷状态
+    try {
+      const res = await questionnaireService.getUserResponse();
+      if (!res || !res.questionnaire_response || Object.keys(res.questionnaire_response).length === 0) {
+        showQuestionnaireAlert.value = true;
+      }
+    } catch (e) {
+      showQuestionnaireAlert.value = true;
+    }
   } catch (error) {
     ElMessage.error('Failed to get user information');
     router.push('/login');
@@ -345,5 +374,28 @@ const handleCommand = (command) => {
 .profile-dropdown-menu .el-dropdown-menu__item:hover {
   background: #f0f7ff;
   color: #409eff;
+}
+
+.questionnaire-alert {
+  margin: 0 0 24px 0;
+  width: 100%;
+  z-index: 2000;
+}
+
+.questionnaire-btn {
+  background: linear-gradient(90deg, #ffe066 0%, #ffd43b 100%);
+  color: #7c5c00;
+  border: none;
+  border-radius: 20px;
+  font-weight: bold;
+  box-shadow: 0 2px 8px rgba(255, 212, 67, 0.15);
+  transition: background 0.3s, color 0.3s, box-shadow 0.3s;
+}
+
+.questionnaire-btn:hover,
+.questionnaire-btn:focus {
+  background: linear-gradient(90deg, #ffd43b 0%, #fab005 100%);
+  color: #fffbe6;
+  box-shadow: 0 4px 16px rgba(255, 212, 67, 0.25);
 }
 </style> 
